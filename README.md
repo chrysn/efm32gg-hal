@@ -18,8 +18,19 @@ just copied over); probably, this library will be developed into a generic
 [embedded-hal]: https://github.com/japaric/embedded-hal
 [EFM32 Giant Gecko]: https://www.silabs.com/products/mcu/32-bit/efm32-giant-gecko
 [svd2rust]: https://github.com/japaric/svd2rust
-[ef32gg990]: https://crates.io/crates/efm32gg990
+[efm32gg990]: https://crates.io/crates/efm32gg990
 [peripheral description document]: https://www.silabs.com/documents/public/reference-manuals/EFM32GG-RM.pdf
+
+### State of implementation
+
+This is very immature software. So far, only GPIO pins are described in terms
+of the HAL's ``digital`` interface.
+
+### Usage
+
+Please see the [EFM32GG-STK3700] board crate for examples.
+
+[EFM32GG-STK3700]: https://github.com/chrysn/efm32gg-stk3700
 
 ### License
 
