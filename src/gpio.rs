@@ -13,6 +13,25 @@ pub trait GPIOExt {
     fn split(self, cmu: &mut efm32gg990::CMU) -> Pins;
 }
 
+/// A trait pertinent to a single GPIO pin; this trait exposes all the functionality that is not
+/// exposed via the embedded_hal::digital traits.
+pub trait EFM32Pin {
+
+    type Disabled;
+    type Output;
+    type Input;
+
+    /// Convert the pin into an output pin. The original pin, however configured, is consumed, the
+    /// hardware configuration changed to drive high or low, and returned as a pin that implements
+    /// embedded_hal::digital::OutputPin.
+    fn as_output(self: Self) -> Self::Output;
+
+    /// Convert the pin into an input pin. The original pin, however configured, is consumed, the
+    /// hardware configuration changed to input with no pull-up- or down resistors, and returned as
+    /// a pin that implements embedded_hal::digital::InputPin.
+    fn as_input(self: Self) -> Self::Input;
+}
+
 fn sneak_into_gpio() -> &'static efm32gg990::gpio::RegisterBlock {
         unsafe { &*efm32gg990::GPIO::ptr() }
 }
@@ -48,17 +67,18 @@ macro_rules! gpio {
                 }
             }
 
-            impl<Mode> $PXi<Mode> {
-                pub fn as_output(self: Self) -> $PXi<Output> {
+            impl<Mode> EFM32Pin for $PXi<Mode> {
+                type Disabled = $PXi<Disabled>;
+                type Output = $PXi<Output>;
+                type Input = $PXi<Input>;
+
+                fn as_output(self: Self) -> Self::Output {
                     let gpio = sneak_into_gpio();
                     gpio.$px_modehl.modify(|_, w| w.$modei().pushpull());
 
                     $PXi { _mode: PhantomData }
                 }
-            }
-
-            impl<Mode> $PXi<Mode> {
-                pub fn as_input(self: Self) -> $PXi<Input> {
+                fn as_input(self: Self) -> Self::Input {
                     let gpio = sneak_into_gpio();
                     gpio.$px_modehl.modify(|_, w| w.$modei().input());
 
