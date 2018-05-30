@@ -7,6 +7,10 @@ pub struct Disabled {}
 pub struct Output {}
 pub struct Input {}
 
+fn sneak_into_gpio() -> &'static efm32gg990::gpio::RegisterBlock {
+        unsafe { &*efm32gg990::GPIO::ptr() }
+}
+
 macro_rules! gpio {
     ([$($PXi:ident: ($pxi:ident, $i:expr, $px_din:ident, $px_doutset:ident, $px_doutclr:ident, $modei:ident, $px_modehl:ident),)+]) => {
 
@@ -17,20 +21,20 @@ macro_rules! gpio {
 
             impl digital::OutputPin for $PXi<Output> {
                 fn set_low(self: &mut Self) {
-                    let gpio = unsafe { efm32gg990::Peripherals::steal() }.GPIO;
-                    gpio.$px_doutclr.write(|w| unsafe { w.bits(1 << 0) });
+                    let gpio = sneak_into_gpio();
+                    gpio.$px_doutclr.write(|w| unsafe { w.bits(1 << $i) });
                 }
 
                 fn set_high(self: &mut Self) {
-                    let gpio = unsafe { efm32gg990::Peripherals::steal() }.GPIO;
-                    gpio.$px_doutset.write(|w| unsafe { w.bits(1 << 0) });
+                    let gpio = sneak_into_gpio();
+                    gpio.$px_doutset.write(|w| unsafe { w.bits(1 << $i) });
                 }
             }
             #[cfg(feature = "unproven")]
             impl digital::InputPin for $PXi<Input> {
                 fn is_low(self: &Self) -> bool {
-                    let gpio = unsafe { efm32gg990::Peripherals::steal() }.GPIO;
-                    gpio.$px_din.read().bits() & (1 << 0) == 0
+                    let gpio = sneak_into_gpio();
+                    gpio.$px_din.read().bits() & (1 << $i) == 0
                 }
 
                 fn is_high(self: &Self) -> bool {
@@ -40,7 +44,7 @@ macro_rules! gpio {
 
             impl<Mode> $PXi<Mode> {
                 pub fn as_output(self: Self) -> $PXi<Output> {
-                    let gpio = unsafe { efm32gg990::Peripherals::steal() }.GPIO;
+                    let gpio = sneak_into_gpio();
                     gpio.$px_modehl.modify(|_, w| w.$modei().pushpull());
 
                     $PXi { _mode: PhantomData }
@@ -49,7 +53,7 @@ macro_rules! gpio {
 
             impl<Mode> $PXi<Mode> {
                 pub fn as_input(self: Self) -> $PXi<Input> {
-                    let gpio = unsafe { efm32gg990::Peripherals::steal() }.GPIO;
+                    let gpio = sneak_into_gpio();
                     gpio.$px_modehl.modify(|_, w| w.$modei().input());
 
                     $PXi { _mode: PhantomData }
