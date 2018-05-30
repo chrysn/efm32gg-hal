@@ -8,6 +8,10 @@ description = "HAL for the EFM32GG (EFM32 Giant Gecko) family of microcontroller
 keywords = ["arm", "cortex-m", "efm32", "efm32gg", "embedded-hal-impl"]
 license = "MIT OR Apache-2.0"
 
+readme = "README.md"
+repository = "https://github.com/chrysn/efm32gg-hal"
+# documentation = "https://docs.rs/efm32gg-hal" # only to be advertised when actually useful
+
 [dependencies]
 # version is a wild guess. dependency on unproven features should only be
 # present if own unproven feature is active (but how do i do that?).
