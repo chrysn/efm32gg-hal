@@ -3,9 +3,9 @@ name = "efm32gg-hal"
 version = "0.1.0"
 authors = ["chrysn <chrysn@fsfe.org>"]
 
-categories = ["embedded", "no-std", "embedded-hal-impl"]
+categories = ["embedded", "no-std"]
 description = "HAL for the EFM32GG (EFM32 Giant Gecko) family of microcontrollers"
-keywords = ["arm", "cortex-m", "efm32", "efm32gg"]
+keywords = ["arm", "cortex-m", "efm32", "efm32gg", "embedded-hal-impl"]
 license = "MIT OR Apache-2.0"
 
 [dependencies]
