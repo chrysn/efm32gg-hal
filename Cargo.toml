@@ -10,13 +10,14 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 # version is a wild guess. dependency on unproven features should only be
-# present if own unproven feature is active.
+# present if own unproven feature is active (but how do i do that?).
 embedded-hal = { version = "0.2.0", features = ["unproven"] }
+
 # for starts it's probably convenient to depend on the biggest available
 # svd2rust-generated crate (the chips will let us; FWICT all EFM32GG are the
 # same and just have fewer pins wired); having bobbin will hopefully make this
 # smoother
-efm32gg990 = "*"
+efm32gg990 = "0.1.1"
 
 [features]
 default = ["unproven"]
