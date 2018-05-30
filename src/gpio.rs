@@ -1,3 +1,5 @@
+//! GPIO (general purpose input/output), mapped to embedded_hal::digital
+
 use efm32gg990;
 use embedded_hal::digital;
 
@@ -6,6 +8,10 @@ use core::marker::PhantomData;
 pub struct Disabled {}
 pub struct Output {}
 pub struct Input {}
+
+pub trait GPIOExt {
+    fn split(self, cmu: &mut efm32gg990::CMU) -> Pins;
+}
 
 fn sneak_into_gpio() -> &'static efm32gg990::gpio::RegisterBlock {
         unsafe { &*efm32gg990::GPIO::ptr() }
@@ -67,14 +73,20 @@ macro_rules! gpio {
             )+
         }
 
-        pub fn split(_comsumed_peripheral: efm32gg990::GPIO, cmu: &mut efm32gg990::CMU) -> Pins {
-            // A later version will likely want to use a CMU abstraction.
-            cmu.hfperclken0.modify(|_, w| w.gpio().bit(true));
+        impl GPIOExt for efm32gg990::GPIO {
+            fn split(self, cmu: &mut efm32gg990::CMU) -> Pins {
+                // The GPIO register block gets consumed, further access only happens through the
+                // pins we're giving out.
+                let _consumed = self;
 
-            Pins {
-                $(
-                    $pxi: $PXi { _mode: PhantomData },
-                )+
+                // A later version will likely want to use a CMU abstraction.
+                cmu.hfperclken0.modify(|_, w| w.gpio().bit(true));
+
+                Pins {
+                    $(
+                        $pxi: $PXi { _mode: PhantomData },
+                    )+
+                }
             }
         }
     }
