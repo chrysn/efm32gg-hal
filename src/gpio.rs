@@ -67,7 +67,10 @@ macro_rules! gpio {
             )+
         }
 
-        pub fn split(_comsumed_peripheral: efm32gg990::GPIO) -> Pins {
+        pub fn split(_comsumed_peripheral: efm32gg990::GPIO, cmu: &mut efm32gg990::CMU) -> Pins {
+            // A later version will likely want to use a CMU abstraction.
+            cmu.hfperclken0.modify(|_, w| w.gpio().bit(true));
+
             Pins {
                 $(
                     $pxi: $PXi { _mode: PhantomData },
