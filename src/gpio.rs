@@ -7,7 +7,6 @@
 //! whole model if at all desired.
 
 use efm32gg990;
-use embedded_hal::digital;
 
 use core::marker::PhantomData;
 
@@ -45,57 +44,63 @@ fn sneak_into_gpio() -> &'static efm32gg990::gpio::RegisterBlock {
 macro_rules! gpio {
     ([$($PXi:ident: ($pxi:ident, $i:expr, $px_din:ident, $px_doutset:ident, $px_doutclr:ident, $modei:ident, $px_modehl:ident),)+]) => {
 
-        $(
-            pub struct $PXi<Mode> {
-                _mode: PhantomData<Mode>,
-            }
+        pub mod pins {
+            use embedded_hal::digital;
+            use core::marker::PhantomData;
+            use super::*;
 
-            impl digital::OutputPin for $PXi<Output> {
-                fn set_low(self: &mut Self) {
-                    let gpio = sneak_into_gpio();
-                    gpio.$px_doutclr.write(|w| unsafe { w.bits(1 << $i) });
+            $(
+                pub struct $PXi<Mode> {
+                    pub(super) _mode: PhantomData<Mode>,
                 }
 
-                fn set_high(self: &mut Self) {
-                    let gpio = sneak_into_gpio();
-                    gpio.$px_doutset.write(|w| unsafe { w.bits(1 << $i) });
+                impl digital::OutputPin for $PXi<Output> {
+                    fn set_low(self: &mut Self) {
+                        let gpio = sneak_into_gpio();
+                        gpio.$px_doutclr.write(|w| unsafe { w.bits(1 << $i) });
+                    }
+
+                    fn set_high(self: &mut Self) {
+                        let gpio = sneak_into_gpio();
+                        gpio.$px_doutset.write(|w| unsafe { w.bits(1 << $i) });
+                    }
                 }
-            }
-            #[cfg(feature = "unproven")]
-            impl digital::InputPin for $PXi<Input> {
-                fn is_low(self: &Self) -> bool {
-                    let gpio = sneak_into_gpio();
-                    gpio.$px_din.read().bits() & (1 << $i) == 0
+                #[cfg(feature = "unproven")]
+                impl digital::InputPin for $PXi<Input> {
+                    fn is_low(self: &Self) -> bool {
+                        let gpio = sneak_into_gpio();
+                        gpio.$px_din.read().bits() & (1 << $i) == 0
+                    }
+
+                    fn is_high(self: &Self) -> bool {
+                        !self.is_low()
+                    }
                 }
 
-                fn is_high(self: &Self) -> bool {
-                    !self.is_low()
+                impl<Mode> EFM32Pin for $PXi<Mode> {
+                    type Disabled = $PXi<Disabled>;
+                    type Output = $PXi<Output>;
+                    type Input = $PXi<Input>;
+
+                    fn as_output(self: Self) -> Self::Output {
+                        let gpio = sneak_into_gpio();
+                        gpio.$px_modehl.modify(|_, w| w.$modei().pushpull());
+
+                        $PXi { _mode: PhantomData }
+                    }
+                    fn as_input(self: Self) -> Self::Input {
+                        let gpio = sneak_into_gpio();
+                        gpio.$px_modehl.modify(|_, w| w.$modei().input());
+
+                        $PXi { _mode: PhantomData }
+                    }
                 }
-            }
-
-            impl<Mode> EFM32Pin for $PXi<Mode> {
-                type Disabled = $PXi<Disabled>;
-                type Output = $PXi<Output>;
-                type Input = $PXi<Input>;
-
-                fn as_output(self: Self) -> Self::Output {
-                    let gpio = sneak_into_gpio();
-                    gpio.$px_modehl.modify(|_, w| w.$modei().pushpull());
-
-                    $PXi { _mode: PhantomData }
-                }
-                fn as_input(self: Self) -> Self::Input {
-                    let gpio = sneak_into_gpio();
-                    gpio.$px_modehl.modify(|_, w| w.$modei().input());
-
-                    $PXi { _mode: PhantomData }
-                }
-            }
-        )+
+            )+
+        }
 
         pub struct Pins {
             $(
-                pub $pxi: $PXi<Disabled>,
+                pub $pxi: pins::$PXi<Disabled>,
             )+
         }
 
@@ -110,7 +115,7 @@ macro_rules! gpio {
 
                 Pins {
                     $(
-                        $pxi: $PXi { _mode: PhantomData },
+                        $pxi: pins::$PXi { _mode: PhantomData },
                     )+
                 }
             }
