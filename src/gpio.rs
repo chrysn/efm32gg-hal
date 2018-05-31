@@ -1,4 +1,10 @@
 //! GPIO (general purpose input/output), mapped to embedded_hal::digital
+//!
+//! This implements only what is minimally essential to make input or output pins out of the GPIO
+//! register block. Other drive modes could be added with relative ease (eg. Wired-And, Wired-Or,
+//! input with pull-up/-down), others (eg. the per-bank drive strength, EM4 wakeup) will need
+//! additional mechanisms, and some (eg. clearing the configuration lock) might need changes to the
+//! whole model if at all desired.
 
 use efm32gg990;
 use embedded_hal::digital;
