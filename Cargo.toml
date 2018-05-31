@@ -13,6 +13,8 @@ repository = "https://github.com/chrysn/efm32gg-hal"
 # documentation = "https://docs.rs/efm32gg-hal" # only to be advertised when actually useful
 
 [dependencies]
+cortex-m = "0.5.2"
+
 # version is a wild guess. dependency on unproven features should only be
 # present if own unproven feature is active (but how do i do that?).
 embedded-hal = { version = "0.2.0", features = ["unproven"] }
