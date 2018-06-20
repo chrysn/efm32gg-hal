@@ -15,11 +15,18 @@ separate peripheral documentation, but it appears that many peripherals are
 just copied over); probably, this library will be developed into a generic
 `efm32-hal` library that implements all of the variation there is.
 
+The vendor's [emlib] C library even abstracts over the original EFM32 and the
+newer EFR32 series where differences become more pronounced (eg. EFR32 has no
+more GPIO set / clear registers, and documentation refers the user to bit-band
+access for those operations). With some effort, it should be possible to cover
+what they cover.
+
 [embedded-hal]: https://github.com/japaric/embedded-hal
 [EFM32 Giant Gecko]: https://www.silabs.com/products/mcu/32-bit/efm32-giant-gecko
 [svd2rust]: https://github.com/japaric/svd2rust
 [efm32gg990]: https://crates.io/crates/efm32gg990
 [peripheral description document]: https://www.silabs.com/documents/public/reference-manuals/EFM32GG-RM.pdf
+[emlib]: http://devtools.silabs.com/dl/documentation/doxygen/
 
 ### State of implementation
 
