@@ -23,7 +23,7 @@ embedded-hal = { version = "0.2.0", features = ["unproven"] }
 # svd2rust-generated crate (the chips will let us; FWICT all EFM32GG are the
 # same and just have fewer pins wired); having bobbin will hopefully make this
 # smoother
-efm32gg990 = "0.1.1"
+efm32gg990 = { git = "https://github.com/maximeborges/svd2rust_efm32gg990" } # should become 0.1.2
 
 [features]
 default = ["unproven"]
