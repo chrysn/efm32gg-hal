@@ -9,3 +9,5 @@ pub mod time_util;
 pub mod gpio;
 pub mod cmu;
 pub mod systick;
+
+mod bitband;
