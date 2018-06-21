@@ -19,14 +19,19 @@ cortex-m = "0.5.2"
 # present if own unproven feature is active (but how do i do that?).
 embedded-hal = { version = "0.2.0", features = ["unproven"] }
 
-# for starts it's probably convenient to depend on the biggest available
+# for efm32gg, it's probably convenient to depend on the biggest available
 # svd2rust-generated crate (the chips will let us; FWICT all EFM32GG are the
-# same and just have fewer pins wired); having bobbin will hopefully make this
-# smoother
+# same and just have fewer pins wired); crates like efr32xg1 are already as
+# generic as they can be with svd2rust. having bobbin will hopefully make this
+# even smoother.
 
-efm32gg990 = { git = "https://github.com/maximeborges/svd2rust_efm32gg990" } # should become 0.1.2
-# efr32xg1 = { path = "../svd2rust-crates/efr32xg1" }
+efm32gg990 = { git = "https://github.com/maximeborges/svd2rust_efm32gg990", optional = true } # should become 0.1.2
+efr32xg1 = { path = "../svd2rust-crates/efr32xg1", optional = true }
 
 [features]
+
 default = ["unproven"]
 unproven = []
+
+chip-efm32gg = [ "efm32gg990" ]
+chip-efr32xg1 = [ "efr32xg1" ]

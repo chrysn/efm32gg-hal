@@ -1,25 +1,25 @@
 `efm32gg-hal`
 -------------
 
-This is an implementation of the [embedded-hal] API for Silicon Labs [EFM32
-Giant Gecko] devices.
+This is an implementation of the [embedded-hal] API for various Silicon Labs
+devices in the lineage around the [EFM32 Giant Gecko].
 
-It is based on the [svd2rust] generated [efm32gg990] crate, but is usable for
-all EFM32GG chips. (All Gecko chips share a common [peripheral description
-document] that is the main information source of this implementation; their
-data sheets give individual numbers and addresses of peripherals, but it
-appears they are all a strict superset of the largest Giant Gecko chips).
+Currently, the EFM32GG (Giant Gecko) and EFR32xG1 (original configuration of
+Mighty, Blue and Flex Gecko) are supported. The complexity of adding chip
+families probably varies from just adding the device as "works like that other
+device" (should apply to most EFM32 devices released before around 2016) to
+"Some functionality is not supported any more and needs workarounds" (eg. when
+bit-band access becomes mandatory for atomic operations on a register). On the
+long run, it can be expected to cover the devices supported by the vendor's
+[emlib] C library.
 
-It might even be usable for other devices of the Gecko series (they have
-separate peripheral documentation, but it appears that many peripherals are
-just copied over); probably, this library will be developed into a generic
-`efm32-hal` library that implements all of the variation there is.
+The name "efm32gg-hal" stuck from the first supported device, and will stay
+until the author finds a term that can serve as a stable identifier for "EFM32,
+EFR32 and any other chips that have compatible peripherals".
 
-The vendor's [emlib] C library even abstracts over the original EFM32 and the
-newer EFR32 series where differences become more pronounced (eg. EFR32 has no
-more GPIO set / clear registers, and documentation refers the user to bit-band
-access for those operations). With some effort, it should be possible to cover
-what they cover.
+The actually used chip is selected by features named like "chip-efm32gg" or
+"chip-efr32x1"; pick an extern crate to load as "registers" and add the
+appropriate dependency to a crate typically created by [svd2rust].
 
 [embedded-hal]: https://github.com/japaric/embedded-hal
 [EFM32 Giant Gecko]: https://www.silabs.com/products/mcu/32-bit/efm32-giant-gecko

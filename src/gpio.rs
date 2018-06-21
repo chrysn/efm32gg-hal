@@ -121,8 +121,10 @@ macro_rules! gpio {
                 let _consumed = self;
 
                 // A later version will likely want to use a CMU abstraction.
+                #[cfg(feature = "chip-efm32gg")]
                 cmu.hfperclken0.modify(|_, w| w.gpio().bit(true));
-                // cmu.hfbusclken0.modify(|_, w| w.gpio().bit(true));
+                #[cfg(feature = "chip-efr32xg1")]
+                cmu.hfbusclken0.modify(|_, w| w.gpio().bit(true));
 
                 Pins {
                     $(
