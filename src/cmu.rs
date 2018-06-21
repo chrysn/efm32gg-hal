@@ -62,6 +62,13 @@ impl FrozenClock for HFCoreClk {
     fn get_frequency(&self) -> Hertz {
         // FIXME: This assumes that nothing has been changed since the reset; later we'll *want*
         // that to change.
-        Hertz(14_000_000)
+        #[cfg(feature = "chip-efm32gg")]
+        {
+            Hertz(14_000_000)
+        }
+        #[cfg(feature = "chip-efr32xg1")]
+        {
+            Hertz(19_000_000)
+        }
     }
 }
