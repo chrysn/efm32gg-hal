@@ -1,7 +1,8 @@
 #![no_std]
 
 extern crate cortex_m;
-extern crate efm32gg990;
+extern crate efm32gg990 as registers;
+// extern crate efr32xg1 as registers;
 extern crate embedded_hal;
 
 pub mod time_util;

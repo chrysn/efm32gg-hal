@@ -6,7 +6,7 @@
 //! additional mechanisms, and some (eg. clearing the configuration lock) might need changes to the
 //! whole model if at all desired.
 
-use efm32gg990;
+use registers;
 
 use core::marker::PhantomData;
 
@@ -17,7 +17,7 @@ pub struct Output {}
 pub struct Input {}
 
 pub trait GPIOExt {
-    fn split(self, cmu: &mut efm32gg990::CMU) -> Pins;
+    fn split(self, cmu: &mut registers::CMU) -> Pins;
 }
 
 /// A trait pertinent to a single GPIO pin; this trait exposes all the functionality that is not
@@ -39,8 +39,8 @@ pub trait EFM32Pin {
     fn as_input(self: Self) -> Self::Input;
 }
 
-fn sneak_into_gpio() -> &'static efm32gg990::gpio::RegisterBlock {
-        unsafe { &*efm32gg990::GPIO::ptr() }
+fn sneak_into_gpio() -> &'static registers::gpio::RegisterBlock {
+        unsafe { &*registers::GPIO::ptr() }
 }
 
 macro_rules! gpio {
@@ -114,14 +114,15 @@ macro_rules! gpio {
             )+
         }
 
-        impl GPIOExt for efm32gg990::GPIO {
-            fn split(self, cmu: &mut efm32gg990::CMU) -> Pins {
+        impl GPIOExt for registers::GPIO {
+            fn split(self, cmu: &mut registers::CMU) -> Pins {
                 // The GPIO register block gets consumed, further access only happens through the
                 // pins we're giving out.
                 let _consumed = self;
 
                 // A later version will likely want to use a CMU abstraction.
                 cmu.hfperclken0.modify(|_, w| w.gpio().bit(true));
+                // cmu.hfbusclken0.modify(|_, w| w.gpio().bit(true));
 
                 Pins {
                     $(

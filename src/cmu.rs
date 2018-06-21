@@ -18,7 +18,7 @@
 //!       want to model deep sleep states correcly; starting a sleep state that disables HF clocks
 //!       should require having a writable reference to that clock.)
 
-use efm32gg990;
+use registers;
 
 use time_util::Hertz;
 
@@ -26,7 +26,7 @@ pub trait CMUExt {
     fn constrain(self) -> Cmu;
 }
 
-impl CMUExt for efm32gg990::CMU {
+impl CMUExt for registers::CMU {
     fn constrain(self) -> Cmu {
         Cmu { _private: () }
     }
