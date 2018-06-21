@@ -25,8 +25,8 @@ embedded-hal = { version = "0.2.0", features = ["unproven"] }
 # generic as they can be with svd2rust. having bobbin will hopefully make this
 # even smoother.
 
-efm32gg990 = { git = "https://github.com/maximeborges/svd2rust_efm32gg990", optional = true } # should become 0.1.2
-efr32xg1 = { path = "../svd2rust-crates/efr32xg1", optional = true }
+efm32gg990 = { version = "0.1.2", optional = true }
+efr32xg1 = { version = "0.1.0", optional = true }
 
 [features]
 
