@@ -44,12 +44,34 @@ pub trait FrozenClock {
 
 pub struct Clocks {
     pub hfcoreclk: HFCoreClk,
+    pub i2c0: I2C0Clk,
+}
+
+pub struct I2C0Clk
+{
+    _private: (),
+}
+
+impl I2C0Clk
+{
+    pub fn enable(&mut self) {
+        // UNSAFE FIXME this actually is still unsafe because we don't really have an exclusive
+        // pointer there and would need to set the bit using bit-banding, but the current svd2rust
+        // registers can't use that.
+        //
+        // A better way is under discussion: https://github.com/japaric/svd2rust/issues/226
+        unsafe {
+            let cmu = &*registers::CMU::ptr();
+            cmu.hfperclken0.modify(|_, w| w.i2c0().set_bit());
+        }
+    }
 }
 
 impl Cmu {
     pub fn split(self) -> Clocks {
         Clocks {
             hfcoreclk: HFCoreClk { _private: () },
+            i2c0: I2C0Clk { _private: () },
         }
     }
 }
