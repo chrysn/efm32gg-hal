@@ -45,6 +45,7 @@ pub trait FrozenClock {
 pub struct Clocks {
     pub hfcoreclk: HFCoreClk,
     pub i2c0: I2C0Clk,
+    pub gpio: GPIOClk,
 }
 
 pub struct I2C0Clk
@@ -67,11 +68,31 @@ impl I2C0Clk
     }
 }
 
+pub struct GPIOClk
+{
+    _private: (),
+}
+
+impl GPIOClk
+{
+    pub fn enable(&mut self) {
+        // UNSAFE FIXME as with I2CClk
+        unsafe {
+            let cmu = &*registers::CMU::ptr();
+            #[cfg(feature = "chip-efm32gg")]
+            cmu.hfperclken0.modify(|_, w| w.gpio().bit(true));
+            #[cfg(feature = "chip-efr32xg1")]
+            cmu.hfbusclken0.modify(|_, w| w.gpio().bit(true));
+        }
+    }
+}
+
 impl Cmu {
     pub fn split(self) -> Clocks {
         Clocks {
             hfcoreclk: HFCoreClk { _private: () },
             i2c0: I2C0Clk { _private: () },
+            gpio: GPIOClk { _private: () },
         }
     }
 }

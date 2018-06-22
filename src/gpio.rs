@@ -10,6 +10,7 @@ use registers;
 
 use core::marker::PhantomData;
 use embedded_hal::digital;
+use super::cmu;
 
 use bitband;
 
@@ -18,7 +19,7 @@ pub struct Output {}
 pub struct Input {}
 
 pub trait GPIOExt {
-    fn split(self, cmu: &mut registers::CMU) -> Pins;
+    fn split(self, gpioclk: cmu::GPIOClk) -> Pins;
 }
 
 /// A trait pertinent to a single GPIO pin; this trait exposes all the functionality that is not
@@ -141,16 +142,12 @@ macro_rules! gpio {
         }
 
         impl GPIOExt for registers::GPIO {
-            fn split(self, cmu: &mut registers::CMU) -> Pins {
+            fn split(self, mut gpioclk: cmu::GPIOClk) -> Pins {
                 // The GPIO register block gets consumed, further access only happens through the
                 // pins we're giving out.
                 let _consumed = self;
 
-                // A later version will likely want to use a CMU abstraction.
-                #[cfg(feature = "chip-efm32gg")]
-                cmu.hfperclken0.modify(|_, w| w.gpio().bit(true));
-                #[cfg(feature = "chip-efr32xg1")]
-                cmu.hfbusclken0.modify(|_, w| w.gpio().bit(true));
+                gpioclk.enable();
 
                 Pins {
                     $(
