@@ -43,10 +43,9 @@ pub struct I2C0WithClock {
 impl I2C0WithClock {
     pub fn with_scl(self, route: registers::i2c0::routeloc0::SCLLOCW, scl: pins::PC11<Disabled>) -> Result<I2C0WithScl<pins::PC11<Disabled>>, ()>
     {
-        // This currently fails to compile due to missing ParialEq on the write values
-//         if route != registers::i2c0::routeloc0::SCLLOCW::LOC15 {
-//             return Result::Err(());
-//         }
+        if route != registers::i2c0::routeloc0::SCLLOCW::LOC15 {
+            return Result::Err(());
+        }
 
         Ok(I2C0WithScl { reg: self.reg, sclroute: route, sclpin: scl })
     }
@@ -63,10 +62,9 @@ pub struct I2C0WithScl<SCLP: EFM32Pin> {
 impl<SCLP: EFM32Pin> I2C0WithScl<SCLP> {
     pub fn with_sda(self, route: registers::i2c0::routeloc0::SDALOCW, sda: pins::PC10<Disabled>) -> Result<ConfiguredI2C0, ()>
     {
-        // This currently fails to compile due to missing ParialEq on the write values
-//         if route != registers::i2c0::routeloc0::SDALOCW::LOC15 {
-//             return Result::Err(());
-//         }
+        if route != registers::i2c0::routeloc0::SDALOCW::LOC15 {
+            return Result::Err(());
+        }
 
         let sclroute = self.sclroute;
         self.reg.routeloc0.write(|w| w.sdaloc().variant(route).sclloc().variant(sclroute));
