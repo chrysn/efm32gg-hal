@@ -11,6 +11,7 @@ extern crate efr32xg1 as registers;
 pub mod time_util;
 
 pub mod gpio;
+pub mod i2c;
 pub mod cmu;
 pub mod systick;
 
