@@ -161,3 +161,62 @@ impl embedded_hal::blocking::i2c::Write for ConfiguredI2C0 {
         Ok(())
     }
 }
+
+impl embedded_hal::blocking::i2c::Read for ConfiguredI2C0 {
+    type Error = Error;
+
+    fn read(&mut self, addr: u8, bytes: &mut [u8]) -> Result<(), Error>
+    {
+        //! Unlike the write operation, this does not really look like the master diagram
+        //! referenced there; this is partially because the workflow suggested there ("93 requires
+        //! action RXDATA", even though no data has been received) is illogical, and because the
+        //! diagram fails to capture that the last read must be NACK'd or even a STOP will not
+        //! return the bus to idle.
+
+        if self.reg.state.read().bits() > 1 {
+            return Err(Error::NotReady);
+        }
+
+        self.reg.cmd.write(|w| w.start().bit(true));
+
+        while match self.reg.state.read().bits() {
+            // The digram does not show state 0x53; it appears that if the peripheral does not know yet
+            // it'd be sending, it does not set the TRANSMITTER flag
+            0x53 => false,
+            0x57 => false,
+            _ => true
+        } {}
+
+        self.reg.txdata.write(|w| unsafe { w.txdata().bits(addr | 1) });
+
+        // Happily accepting patches for a more idiomatic "ack all but the last one" expression.
+        let mut i = 0;
+        let imax = bytes.len();
+        for mut datum in bytes.iter_mut() {
+            while match self.reg.state.read().bits() {
+                1 => return Err(Error::ArbitrationLost),
+                0x9b => {
+                    self.reg.cmd.write(|w| w.stop().bit(true));
+                    return Err(Error::AddressNack);
+                }
+                0xb3 => false,
+                _ => true,
+            } {}
+
+            *datum = self.reg.rxdata.read().bits() as u8;
+
+            i += 1;
+            if i == imax {
+                self.reg.cmd.write(|w| w.nack().bit(true));
+            } else {
+                self.reg.cmd.write(|w| w.ack().bit(true));
+            }
+        }
+
+        self.reg.cmd.write(|w| w.stop().bit(true));
+
+        while self.reg.state.read().bits() != 0 {}
+
+        Ok(())
+    }
+}
