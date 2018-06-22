@@ -84,9 +84,21 @@ pub struct ConfiguredI2C0 {
     reg: registers::I2C0,
 }
 
+/// Error conditions a read or write operation can end with. Some of those states can happen
+/// regularly (eg. lost arbitration in multi-master setups), some should be prevented by this
+/// implementation (eg. "Device not in idle state").
+///
+/// Error descriptions sometimes relate to the state diagrams of the reference manuals.
 #[derive(Debug)]
 pub enum Error {
-    // As long as no ack/nack checks are done, we don't really return any
+    /// Device is not in idle or busy state when operation is started.
+    NotReady,
+    /// Arbitration was lost during transmission, another master took control of the bus.
+    ArbitrationLost,
+    /// The address sent was not acknowledged by any recipient.
+    AddressNack,
+    /// A byte sent was not acknowledged by the recipient.
+    DataNack,
 }
 
 impl embedded_hal::blocking::i2c::Write for ConfiguredI2C0 {
@@ -94,16 +106,57 @@ impl embedded_hal::blocking::i2c::Write for ConfiguredI2C0 {
 
     fn write(&mut self, addr: u8, bytes: &[u8]) -> Result<(), Error>
     {
-        self.reg.txdata.write(|w| unsafe { w.txdata().bits(addr) });
-        self.reg.cmd.write(|w| w.start().bit(true));
-        for datum in bytes.iter() {
-            while !self.reg.status.read().txbl().bit() {};
-    //         if self.reg.state.read().nacked().bit() { writeln!(stdout, "nacked at 1"); };
-            self.reg.txdata.write(|w| unsafe { w.txdata().bits(*datum) });
+        //! Implemented according to diagram 17.15 of the EFR32xG1 Reference Manual rev 1.1
+        //! <https://www.silabs.com/documents/public/reference-manuals/efr32xg1-rm.pdf>.  States
+        //! are expressed as hex numbers for easier correlation with that documentation.
+        //!
+        //! It is not trying to queue up characters (thus favoring simplicity over speed), and does
+        //! not allow for configured slave addresses on the master (thus avoiding to enter the
+        //! slave states via the 0x73/0x71 sttes).
+
+        if self.reg.state.read().bits() > 1 {
+            return Err(Error::NotReady);
         }
-        while !self.reg.status.read().txbl().bit() {};
-        while !self.reg.state.read().state().is_dataack() {}
+
+        self.reg.cmd.write(|w| w.start().bit(true));
+
+        while match self.reg.state.read().bits() {
+            // The digram does not show state 0x53; it appears that if the peripheral does not know yet
+            // it'd be sending, it does not set the TRANSMITTER flag
+            0x53 => false,
+            0x57 => false,
+            _ => true
+        } {}
+
+        self.reg.txdata.write(|w| unsafe { w.txdata().bits(addr) });
+
+        while match self.reg.state.read().bits() {
+            1 => return Err(Error::ArbitrationLost),
+            0x9f => {
+                self.reg.cmd.write(|w| w.stop().bit(true));
+                return Err(Error::AddressNack);
+            }
+            0x97 => false,
+            _ => true,
+        } {}
+
+        for datum in bytes.iter() {
+            self.reg.txdata.write(|w| unsafe { w.txdata().bits(*datum) });
+
+            while match self.reg.state.read().bits() {
+                1 => return Err(Error::ArbitrationLost),
+                0xdf => {
+                    self.reg.cmd.write(|w| w.stop().bit(true));
+                    return Err(Error::DataNack);
+                }
+                0xd7 => false,
+                _ => true,
+            } {}
+        }
+
         self.reg.cmd.write(|w| w.stop().bit(true));
+
+        while self.reg.state.read().bits() != 0 {}
 
         Ok(())
     }
