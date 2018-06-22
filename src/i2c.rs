@@ -1,4 +1,16 @@
-///! Initialization and HAL implementation of the I2C peripheral
+//! Initialization and HAL implementation of the I2C peripheral
+//!
+//! The original I2C register block is transformed via a series of method invocations into a
+//! ConfiguredI2C. The methods inbetween partially configure the device, and partially only pass on
+//! information to a later call which configures it. That way was chosen because it allows the
+//! built-in checks ("Does the selected route match the pins passed along?") to be eliminated at
+//! build time.
+//!
+//! The exact invocation depends on the device series, as the routing mechanisms were changed. On
+//! EFR32, a device is built like `i2c0.with_clock(cmu.i2c0).with_scl(LOC15,
+//! pc11).unwrap().with_sda(LOC15, pc10).unwrap()`. On older EFM32, the `with_s{cl,da}` methods
+//! would be replaced with a `with_route` that takes a single route designation and both pins at
+//! once.
 
 use embedded_hal;
 
