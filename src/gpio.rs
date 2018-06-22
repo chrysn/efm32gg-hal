@@ -23,6 +23,18 @@ pub trait GPIOExt {
 
 /// A trait pertinent to a single GPIO pin; this trait exposes all the functionality that is not
 /// exposed via the embedded_hal::digital traits.
+///
+/// Given that different modes of operation make sense with different APIs (a pin configured for
+/// output can be driven, one for input can be queried), the trait is not implemented by a single
+/// struct for a pin but qualified by a parameterized struct whose expressions implement different
+/// traits; for example, PA0<T> implements EFM32Pin for all T, and configurin it as an output pin
+/// with `.as_output()` makes it into a PA0<Output> which implements digital::OutputPin.
+///
+/// Currently, not all information about a pin is encoded in its type (For example, as_output and
+/// as_opendrain produce the same type), that may change just by adding an InputOutput
+/// configuration state that has implements both input and output traits (as it makes sense to both
+/// write to and read an open drain pin), or may even go as far as to encode the full pin
+/// configuration.
 pub trait EFM32Pin {
 
     type Disabled;
@@ -33,6 +45,13 @@ pub trait EFM32Pin {
     /// hardware configuration changed to drive high or low, and returned as a pin that implements
     /// embedded_hal::digital::OutputPin.
     fn as_output(self: Self) -> Self::Output;
+
+    /// Convert the pin into an open drain (wired "and") pin. The original pin, however configured,
+    /// is consumed, the hardware configuration changed to only drive low, and returned as a pin
+    /// that implements embedded_hal::digital::OutputPin (and should later implement InputPin too,
+    /// buit that needs some thinking-through anyway w/rt how much of the configure state should be
+    /// in the typ).
+    fn as_opendrain(self: Self) -> Self::Output;
 
     /// Convert the pin into an input pin. The original pin, however configured, is consumed, the
     /// hardware configuration changed to input with no pull-up- or down resistors, and returned as
@@ -96,6 +115,12 @@ macro_rules! gpio {
                     fn as_output(self: Self) -> Self::Output {
                         let gpio = sneak_into_gpio();
                         gpio.$px_modehl.modify(|_, w| w.$modei().pushpull());
+
+                        $PXi { _mode: PhantomData }
+                    }
+                    fn as_opendrain(self: Self) -> Self::Output {
+                        let gpio = sneak_into_gpio();
+                        gpio.$px_modehl.modify(|_, w| w.$modei().wiredand());
 
                         $PXi { _mode: PhantomData }
                     }
