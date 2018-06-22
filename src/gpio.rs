@@ -9,6 +9,7 @@
 use registers;
 
 use core::marker::PhantomData;
+use embedded_hal::digital;
 
 use bitband;
 
@@ -25,8 +26,8 @@ pub trait GPIOExt {
 pub trait EFM32Pin {
 
     type Disabled;
-    type Output;
-    type Input;
+    type Output: digital::OutputPin;
+    type Input: digital::InputPin;
 
     /// Convert the pin into an output pin. The original pin, however configured, is consumed, the
     /// hardware configuration changed to drive high or low, and returned as a pin that implements
