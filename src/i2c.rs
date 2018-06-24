@@ -128,7 +128,7 @@ impl embedded_hal::blocking::i2c::Write for ConfiguredI2C0 {
             _ => true
         } {}
 
-        self.reg.txdata.write(|w| unsafe { w.txdata().bits(addr) });
+        self.reg.txdata.write(|w| unsafe { w.txdata().bits(addr << 1) });
 
         while match self.reg.state.read().bits() {
             1 => return Err(Error::ArbitrationLost),
@@ -187,7 +187,7 @@ impl embedded_hal::blocking::i2c::Read for ConfiguredI2C0 {
             _ => true
         } {}
 
-        self.reg.txdata.write(|w| unsafe { w.txdata().bits(addr | 1) });
+        self.reg.txdata.write(|w| unsafe { w.txdata().bits((addr << 1) | 1) });
 
         // Happily accepting patches for a more idiomatic "ack all but the last one" expression.
         let mut i = 0;
