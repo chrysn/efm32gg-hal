@@ -48,13 +48,11 @@ pub struct Clocks {
     pub gpio: GPIOClk,
 }
 
-pub struct I2C0Clk
-{
+pub struct I2C0Clk {
     _private: (),
 }
 
-impl I2C0Clk
-{
+impl I2C0Clk {
     pub fn enable(&mut self) {
         // UNSAFE FIXME this actually is still unsafe because we don't really have an exclusive
         // pointer there and would need to set the bit using bit-banding, but the current svd2rust
@@ -68,13 +66,11 @@ impl I2C0Clk
     }
 }
 
-pub struct GPIOClk
-{
+pub struct GPIOClk {
     _private: (),
 }
 
-impl GPIOClk
-{
+impl GPIOClk {
     pub fn enable(&mut self) {
         // UNSAFE FIXME as with I2CClk
         unsafe {

@@ -11,9 +11,9 @@
 //! FIXME: factor out the common parts (which should be everything except the actual numbers for
 //! the clock frequency depending on the SystClkSource) into ... core-m-hal?
 
+use cmu::{FrozenClock, HFCoreClk};
 use cortex_m;
-use cmu::{HFCoreClk, FrozenClock};
-use embedded_hal::blocking::delay::{DelayUs, DelayMs};
+use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 
 pub trait SystickExt {
     fn constrain(self) -> Systick;
@@ -21,7 +21,9 @@ pub trait SystickExt {
 
 impl SystickExt for cortex_m::peripheral::SYST {
     fn constrain(self) -> Systick {
-        Systick { registerblock: self }
+        Systick {
+            registerblock: self,
+        }
     }
 }
 
@@ -40,25 +42,28 @@ pub struct SystickDelay {
 
 impl SystickDelay {
     pub fn new(mut systick: Systick, clock: HFCoreClk) -> Self {
-        systick.registerblock.set_clock_source(cortex_m::peripheral::syst::SystClkSource::Core);
+        systick
+            .registerblock
+            .set_clock_source(cortex_m::peripheral::syst::SystClkSource::Core);
 
         SystickDelay { systick, clock }
     }
 }
 
 impl<UXX> DelayUs<UXX> for SystickDelay
-    where UXX: Into<u32>
+where
+    UXX: Into<u32>,
 {
     fn delay_us(&mut self, us: UXX) {
         // FIXME this assumes clock rate is in whole MHz, which usually holds.
         let factor = self.clock.get_frequency().0 / 1_000_000;
         // Just trigger the assertion...
-        let ticks = factor.checked_mul(us.into()).unwrap_or(1<<24);
+        let ticks = factor.checked_mul(us.into()).unwrap_or(1 << 24);
 
         // FIXME: If we can show that all the above calculation can be done in LTO, then I'd be
         // much more comfortable adding logic that goes into loops for sleeps exceeding one systick
         // wrap (which is about 2s on typical 14MHz devices).
-        assert!(ticks < (1<<24));
+        assert!(ticks < (1 << 24));
 
         self.systick.registerblock.set_reload(ticks);
         self.systick.registerblock.clear_current();
@@ -73,7 +78,8 @@ impl<UXX> DelayUs<UXX> for SystickDelay
 // implementation can do even on a 1MHz clock, and lower clock frequencies can't be expressed
 // anyway in that implementation.
 impl<UXX> DelayMs<UXX> for SystickDelay
-    where UXX: Into<u16>
+where
+    UXX: Into<u16>,
 {
     fn delay_ms(&mut self, ms: UXX) {
         let ms: u16 = ms.into();

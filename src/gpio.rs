@@ -8,9 +8,9 @@
 
 use registers;
 
+use super::cmu;
 use core::marker::PhantomData;
 use embedded_hal::digital;
-use super::cmu;
 
 use bitband;
 
@@ -37,7 +37,6 @@ pub trait GPIOExt {
 /// write to and read an open drain pin), or may even go as far as to encode the full pin
 /// configuration.
 pub trait EFM32Pin {
-
     type Disabled;
     type Output: digital::OutputPin;
     type Input: digital::InputPin;
@@ -61,7 +60,7 @@ pub trait EFM32Pin {
 }
 
 fn sneak_into_gpio() -> &'static registers::gpio::RegisterBlock {
-        unsafe { &*registers::GPIO::ptr() }
+    unsafe { &*registers::GPIO::ptr() }
 }
 
 macro_rules! gpio {
@@ -158,8 +157,6 @@ macro_rules! gpio {
         }
     }
 }
-
-
 
 gpio!([
     PA0:  (pa0,  0,  pa_din, pa_dout, mode0,  pa_model),

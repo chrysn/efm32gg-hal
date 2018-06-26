@@ -16,8 +16,8 @@ use embedded_hal;
 
 use registers;
 
-use gpio::{EFM32Pin, pins, Disabled};
 use super::cmu;
+use gpio::{pins, Disabled, EFM32Pin};
 
 pub trait I2CExt<Clk, WithClock> {
     fn with_clock(self, clock: Clk) -> WithClock;
@@ -41,15 +41,22 @@ pub struct I2C0WithClock {
 }
 
 impl I2C0WithClock {
-    pub fn with_scl(self, route: registers::i2c0::routeloc0::SCLLOCW, scl: pins::PC11<Disabled>) -> Result<I2C0WithScl<pins::PC11<Disabled>>, ()>
-    {
+    pub fn with_scl(
+        self,
+        route: registers::i2c0::routeloc0::SCLLOCW,
+        scl: pins::PC11<Disabled>,
+    ) -> Result<I2C0WithScl<pins::PC11<Disabled>>, ()> {
         if route != registers::i2c0::routeloc0::SCLLOCW::LOC15 {
             return Result::Err(());
         }
 
-        Ok(I2C0WithScl { reg: self.reg, sclroute: route, sclpin: scl })
+        Ok(I2C0WithScl {
+            reg: self.reg,
+            sclroute: route,
+            sclpin: scl,
+        })
     }
-// PF0 is SCL#23 etc -- we might need to generate those for all.
+    // PF0 is SCL#23 etc -- we might need to generate those for all.
 }
 
 pub struct I2C0WithScl<SCLP: EFM32Pin> {
@@ -60,15 +67,22 @@ pub struct I2C0WithScl<SCLP: EFM32Pin> {
 }
 
 impl<SCLP: EFM32Pin> I2C0WithScl<SCLP> {
-    pub fn with_sda(self, route: registers::i2c0::routeloc0::SDALOCW, sda: pins::PC10<Disabled>) -> Result<ConfiguredI2C0, ()>
-    {
+    pub fn with_sda(
+        self,
+        route: registers::i2c0::routeloc0::SDALOCW,
+        sda: pins::PC10<Disabled>,
+    ) -> Result<ConfiguredI2C0, ()> {
         if route != registers::i2c0::routeloc0::SDALOCW::LOC15 {
             return Result::Err(());
         }
 
         let sclroute = self.sclroute;
-        self.reg.routeloc0.write(|w| w.sdaloc().variant(route).sclloc().variant(sclroute));
-        self.reg.routepen.write(|w| w.sdapen().bit(true).sclpen().bit(true));
+        self.reg
+            .routeloc0
+            .write(|w| w.sdaloc().variant(route).sclloc().variant(sclroute));
+        self.reg
+            .routepen
+            .write(|w| w.sdapen().bit(true).sclpen().bit(true));
 
         let _swallowed = self.sclpin.as_opendrain();
         let _swallowed = sda.as_opendrain();
@@ -104,8 +118,7 @@ pub enum Error {
 impl embedded_hal::blocking::i2c::Write for ConfiguredI2C0 {
     type Error = Error;
 
-    fn write(&mut self, addr: u8, bytes: &[u8]) -> Result<(), Error>
-    {
+    fn write(&mut self, addr: u8, bytes: &[u8]) -> Result<(), Error> {
         //! Implemented according to diagram 17.15 of the EFR32xG1 Reference Manual rev 1.1
         //! <https://www.silabs.com/documents/public/reference-manuals/efr32xg1-rm.pdf>.  States
         //! are expressed as hex numbers for easier correlation with that documentation.
@@ -125,10 +138,12 @@ impl embedded_hal::blocking::i2c::Write for ConfiguredI2C0 {
             // it'd be sending, it does not set the TRANSMITTER flag
             0x53 => false,
             0x57 => false,
-            _ => true
+            _ => true,
         } {}
 
-        self.reg.txdata.write(|w| unsafe { w.txdata().bits(addr << 1) });
+        self.reg
+            .txdata
+            .write(|w| unsafe { w.txdata().bits(addr << 1) });
 
         while match self.reg.state.read().bits() {
             1 => return Err(Error::ArbitrationLost),
@@ -141,7 +156,9 @@ impl embedded_hal::blocking::i2c::Write for ConfiguredI2C0 {
         } {}
 
         for datum in bytes.iter() {
-            self.reg.txdata.write(|w| unsafe { w.txdata().bits(*datum) });
+            self.reg
+                .txdata
+                .write(|w| unsafe { w.txdata().bits(*datum) });
 
             while match self.reg.state.read().bits() {
                 1 => return Err(Error::ArbitrationLost),
@@ -165,8 +182,7 @@ impl embedded_hal::blocking::i2c::Write for ConfiguredI2C0 {
 impl embedded_hal::blocking::i2c::Read for ConfiguredI2C0 {
     type Error = Error;
 
-    fn read(&mut self, addr: u8, bytes: &mut [u8]) -> Result<(), Error>
-    {
+    fn read(&mut self, addr: u8, bytes: &mut [u8]) -> Result<(), Error> {
         //! Unlike the write operation, this does not really look like the master diagram
         //! referenced there; this is partially because the workflow suggested there ("93 requires
         //! action RXDATA", even though no data has been received) is illogical, and because the
@@ -184,10 +200,12 @@ impl embedded_hal::blocking::i2c::Read for ConfiguredI2C0 {
             // it'd be sending, it does not set the TRANSMITTER flag
             0x53 => false,
             0x57 => false,
-            _ => true
+            _ => true,
         } {}
 
-        self.reg.txdata.write(|w| unsafe { w.txdata().bits((addr << 1) | 1) });
+        self.reg
+            .txdata
+            .write(|w| unsafe { w.txdata().bits((addr << 1) | 1) });
 
         // Happily accepting patches for a more idiomatic "ack all but the last one" expression.
         let mut i = 0;
