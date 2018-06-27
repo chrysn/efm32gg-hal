@@ -115,6 +115,15 @@ pub enum Error {
     DataNack,
 }
 
+impl ConfiguredI2C0 {
+    /// Set stop condition on bus and wait for bus to return to idle (or busy, if someone else
+    /// starts talking just as we release) state.
+    fn stop_and_finish(&mut self) {
+        self.reg.cmd.write(|w| w.stop().bit(true));
+        while self.reg.state.read().bits() > 1 {}
+    }
+}
+
 impl embedded_hal::blocking::i2c::Write for ConfiguredI2C0 {
     type Error = Error;
 
@@ -149,6 +158,7 @@ impl embedded_hal::blocking::i2c::Write for ConfiguredI2C0 {
             1 => return Err(Error::ArbitrationLost),
             0x9f => {
                 self.reg.cmd.write(|w| w.stop().bit(true));
+                self.stop_and_finish();
                 return Err(Error::AddressNack);
             }
             0x97 => false,
@@ -164,6 +174,7 @@ impl embedded_hal::blocking::i2c::Write for ConfiguredI2C0 {
                 1 => return Err(Error::ArbitrationLost),
                 0xdf => {
                     self.reg.cmd.write(|w| w.stop().bit(true));
+                    self.stop_and_finish();
                     return Err(Error::DataNack);
                 }
                 0xd7 => false,
@@ -171,9 +182,7 @@ impl embedded_hal::blocking::i2c::Write for ConfiguredI2C0 {
             } {}
         }
 
-        self.reg.cmd.write(|w| w.stop().bit(true));
-
-        while self.reg.state.read().bits() != 0 {}
+        self.stop_and_finish();
 
         Ok(())
     }
@@ -215,6 +224,7 @@ impl embedded_hal::blocking::i2c::Read for ConfiguredI2C0 {
                 1 => return Err(Error::ArbitrationLost),
                 0x9b => {
                     self.reg.cmd.write(|w| w.stop().bit(true));
+                    self.stop_and_finish();
                     return Err(Error::AddressNack);
                 }
                 0xb3 => false,
@@ -231,9 +241,7 @@ impl embedded_hal::blocking::i2c::Read for ConfiguredI2C0 {
             }
         }
 
-        self.reg.cmd.write(|w| w.stop().bit(true));
-
-        while self.reg.state.read().bits() != 0 {}
+        self.stop_and_finish();
 
         Ok(())
     }
