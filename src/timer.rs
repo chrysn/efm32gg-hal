@@ -83,6 +83,23 @@ impl embedded_hal::Pwm for $TimerN {
         unimplemented!();
     }
 }
+
+impl $TimerN {
+    /// Configure whether the output is inverted (false: low duty cycle means line is low most of
+    /// the time, true: low duty cycle means line is high most of the time).
+    ///
+    /// While this can largely be adjusted for by setting the duty to max-n instead of n, inverted
+    /// also means that the output is high during program interruptions (eg. debugging).
+    pub fn set_inverted(&mut self, channel: <Self as embedded_hal::Pwm>::Channel, inverted: bool) {
+        match channel {
+            0 => self.register.cc0_ctrl.modify(|_, w| w.outinv().bit(inverted)),
+            1 => self.register.cc1_ctrl.modify(|_, w| w.outinv().bit(inverted)),
+            2 => self.register.cc2_ctrl.modify(|_, w| w.outinv().bit(inverted)),
+            _ => panic!("Nonexistent channel"),
+        }
+    }
+}
+
     }
 }
 
