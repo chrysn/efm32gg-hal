@@ -46,6 +46,9 @@ pub struct Clocks {
     pub hfcoreclk: HFCoreClk,
     pub i2c0: I2C0Clk,
     pub gpio: GPIOClk,
+    pub timer0: TIMER0Clk,
+    pub timer1: TIMER1Clk,
+    pub timer2: TIMER2Clk,
 }
 
 pub struct I2C0Clk {
@@ -65,6 +68,30 @@ impl I2C0Clk {
         }
     }
 }
+
+
+macro_rules! timerclk {
+    ($TIMERnClk: ident, $timerN: ident) => {
+
+        pub struct $TIMERnClk {
+            _private: (),
+        }
+
+        impl $TIMERnClk {
+            pub fn enable(&mut self) {
+                // UNSAFE FIXME as with I2CClk
+                unsafe {
+                    let cmu = &*registers::CMU::ptr();
+                    cmu.hfperclken0.modify(|_, w| w.$timerN().set_bit());
+                }
+            }
+        }
+    }
+}
+
+timerclk!(TIMER0Clk, timer0);
+timerclk!(TIMER1Clk, timer1);
+timerclk!(TIMER2Clk, timer2);
 
 pub struct GPIOClk {
     _private: (),
@@ -89,6 +116,9 @@ impl Cmu {
             hfcoreclk: HFCoreClk { _private: () },
             i2c0: I2C0Clk { _private: () },
             gpio: GPIOClk { _private: () },
+            timer0: TIMER0Clk { _private: () },
+            timer1: TIMER1Clk { _private: () },
+            timer2: TIMER2Clk { _private: () },
         }
     }
 }
