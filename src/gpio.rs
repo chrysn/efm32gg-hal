@@ -38,7 +38,10 @@ pub trait GPIOExt {
 /// configuration.
 pub trait EFM32Pin {
     type Disabled;
+    #[cfg(not(feature = "unproven"))]
     type Output: digital::OutputPin;
+    #[cfg(feature = "unproven")]
+    type Output: digital::OutputPin + digital::StatefulOutputPin;
     type Input: digital::InputPin;
 
     /// Convert the pin into an output pin. The original pin, however configured, is consumed, the
@@ -93,6 +96,17 @@ macro_rules! gpio {
                         // see comments on set_low
                         let gpio = sneak_into_gpio();
                         unsafe { bitband::change_bit(&gpio.$px_dout, $i, true); }
+                    }
+                }
+                #[cfg(feature = "unproven")]
+                impl digital::StatefulOutputPin for $PXi<Output> {
+                    fn is_set_low(self: &Self) -> bool {
+                        let gpio = sneak_into_gpio();
+                        gpio.$px_dout.read().bits() & (1 << $i) == 0
+                    }
+
+                    fn is_set_high(self: &Self) -> bool {
+                        !self.is_set_low()
                     }
                 }
                 #[cfg(feature = "unproven")]
