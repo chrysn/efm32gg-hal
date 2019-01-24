@@ -33,5 +33,10 @@ efr32xg1 = { version = "0.2.0", optional = true }
 default = ["unproven"]
 unproven = []
 
-chip-efm32gg = [ "efm32gg990" ]
+chip-efm32gg = [ "efm32gg990", "_has_timer2" ]
 chip-efr32xg1 = [ "efr32xg1" ]
+
+# Marker features pulled in by the individual chip features. Enabling them
+# manually results in build-time errors (as clocks or peripherals are accessed
+# that are not available).
+_has_timer2 = []
