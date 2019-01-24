@@ -46,8 +46,9 @@ impl I2C0WithClock {
         route: registers::i2c0::routeloc0::SCLLOCW,
         scl: pins::PC11<Disabled>,
     ) -> Result<I2C0WithScl<pins::PC11<Disabled>>, ()> {
-        if route != registers::i2c0::routeloc0::SCLLOCW::LOC15 {
-            return Result::Err(());
+        match route {
+            registers::i2c0::routeloc0::SCLLOCW::LOC15 => (),
+            _ => return Result::Err(())
         }
 
         Ok(I2C0WithScl {
@@ -72,8 +73,9 @@ impl<SCLP: EFM32Pin> I2C0WithScl<SCLP> {
         route: registers::i2c0::routeloc0::SDALOCW,
         sda: pins::PC10<Disabled>,
     ) -> Result<ConfiguredI2C0, ()> {
-        if route != registers::i2c0::routeloc0::SDALOCW::LOC15 {
-            return Result::Err(());
+        match route {
+            registers::i2c0::routeloc0::SDALOCW::LOC15 => (),
+            _ => return Result::Err(())
         }
 
         let sclroute = self.sclroute;
