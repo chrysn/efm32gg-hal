@@ -3,6 +3,8 @@ name = "efm32gg-hal"
 version = "0.2.0"
 authors = ["chrysn <chrysn@fsfe.org>"]
 
+edition = "2018"
+
 categories = ["embedded", "no-std"]
 description = "HAL for the EFM32GG (EFM32 Giant Gecko) family of microcontrollers"
 keywords = ["arm", "cortex-m", "efm32", "efm32gg", "embedded-hal-impl"]

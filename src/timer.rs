@@ -6,7 +6,7 @@
 use core::marker::PhantomData;
 
 use registers;
-use cmu;
+use crate::cmu;
 
 pub trait TimerExt<Clk, Timer> {
     fn with_clock(self, clock: Clk) -> Timer;
@@ -330,7 +330,7 @@ timer!(TIMER1, TIMER1Clk, Timer1, timer1);
 #[cfg(feature = "_has_timer2")]
 timer!(TIMER2, TIMER2Clk, Timer2, timer2);
 
-use gpio;
+use crate::gpio;
 
 #[cfg(feature = "chip-efm32gg")]
 impl Timer2 {

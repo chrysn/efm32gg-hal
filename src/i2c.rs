@@ -17,7 +17,7 @@ use embedded_hal;
 use registers;
 
 use super::cmu;
-use gpio::{pins, Disabled, EFM32Pin};
+use crate::gpio::{pins, Disabled, EFM32Pin};
 
 pub trait I2CExt<Clk, WithClock> {
     fn with_clock(self, clock: Clk) -> WithClock;
@@ -221,7 +221,7 @@ impl embedded_hal::blocking::i2c::Read for ConfiguredI2C0 {
         // Happily accepting patches for a more idiomatic "ack all but the last one" expression.
         let mut i = 0;
         let imax = bytes.len();
-        for mut datum in bytes.iter_mut() {
+        for datum in bytes.iter_mut() {
             while match self.reg.state.read().bits() {
                 1 => return Err(Error::ArbitrationLost),
                 0x9b => {

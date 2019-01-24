@@ -11,7 +11,7 @@
 //! FIXME: factor out the common parts (which should be everything except the actual numbers for
 //! the clock frequency depending on the SystClkSource) into ... core-m-hal?
 
-use cmu::{FrozenClock, HFCoreClk};
+use crate::cmu::{FrozenClock, HFCoreClk};
 use cortex_m;
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 

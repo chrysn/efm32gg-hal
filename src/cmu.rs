@@ -20,7 +20,7 @@
 
 use registers;
 
-use time_util::Hertz;
+use crate::time_util::Hertz;
 
 pub trait CMUExt {
     fn constrain(self) -> Cmu;

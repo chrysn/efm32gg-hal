@@ -12,7 +12,7 @@ use super::cmu;
 use core::marker::PhantomData;
 use embedded_hal::digital;
 
-use bitband;
+use crate::bitband;
 
 pub struct Disabled {}
 pub struct Output {}
