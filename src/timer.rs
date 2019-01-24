@@ -3,6 +3,8 @@
 //! This module exposes some features of the EFM32 timer/counter peripheral; most notably, it
 //! allows easy configuration of PWM pins.
 
+use core::marker::PhantomData;
+
 use registers;
 use cmu;
 
@@ -10,6 +12,28 @@ pub trait TimerExt<Clk, Timer> {
     fn with_clock(self, clock: Clk) -> Timer;
 }
 
+/// Marker type for timer channels, signifying they're a CC channel 0 of whichever timer
+pub struct Channel0 {}
+/// Marker type for timer channels, signifying they're a CC channel 1 of whichever timer
+pub struct Channel1 {}
+/// Marker type for timer channels, signifying they're a CC channel 2 of whichever timer
+pub struct Channel2 {}
+
+pub struct Channels<C0, C1, C2> {
+    pub channel0: C0,
+    pub channel1: C1,
+    pub channel2: C2,
+}
+
+/// Individual channel of a timer, accessible through a timer's .split() method.
+pub struct TimerChannel<Timer, Channel> {
+    _phantom: PhantomData<(Timer, Channel)>,
+}
+
+pub struct RoutedTimerChannel<Timer, Channel, Pin> {
+    pin: Pin,
+    channel: TimerChannel<Timer, Channel>
+}
 
 macro_rules! timer {
     ($TIMERn: ident, $TIMERnClk: ident, $TimerN: ident, $timerN: ident) => {
@@ -161,11 +185,107 @@ impl $TimerN {
         }
     }
 
+    pub fn start(&mut self) {
+        self.register.cmd.write(|w| w.start().bit(true));
+    }
+
+    pub fn split(self) -> Channels<
+        TimerChannel<$TimerN, Channel0>,
+        TimerChannel<$TimerN, Channel1>,
+        TimerChannel<$TimerN, Channel2>,
+    > {
+        Channels {
+            channel0: TimerChannel { _phantom: PhantomData },
+            channel1: TimerChannel { _phantom: PhantomData },
+            channel2: TimerChannel { _phantom: PhantomData },
+        }
+    }
+
 
     /// Do something else with the registers; this is marked unsafe because one might do things
     /// like re-route pins
     pub unsafe fn with_registers<T>(&mut self, action: impl FnOnce(&mut registers::$TIMERn) ->T) -> T {
         action(&mut self.register)
+    }
+}
+
+// Needs to be actually repeated over the channels because the channel structs can't, for example,
+// produce a .cc0_ctrl.modify() artifact because there is nothing to be generic over.
+
+timerchannel!($TIMERn, $TimerN, $timerN, Channel0, cc0pen, cc0_ctrl, cc0_ccv);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel1, cc1pen, cc1_ctrl, cc1_ccv);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel2, cc2pen, cc2_ctrl, cc2_ccv);
+
+    }
+}
+
+macro_rules! timerchannel {
+    ($TIMERn: ident, $TimerN: ident, $timerN: ident, $ChannelX: ident, $ccXpen: ident, $ccX_ctrl: ident, $ccX_ccv: ident) => {
+
+impl TimerChannel<$TimerN, $ChannelX> {
+    /// Get a pointer to the underlying timer's peripheral block.
+    ///
+    /// Accessing that is safe only to the CCx registers of this block, as those are exclusive to
+    /// this struct which by construction gets only created once.
+    fn register(&self) -> *mut registers::$timerN::RegisterBlock {
+        registers::$TIMERn::ptr() as *mut _
+    }
+}
+
+impl<P> RoutedTimerChannel<$TimerN, $ChannelX, P> {
+    /// Configure whether the output channel is inverted (false: low duty cycle means line is low
+    /// most of the time, true: low duty cycle means line is high most of the time).
+    ///
+    /// While this can largely be adjusted for by setting the duty to max-n instead of n, inverted
+    /// also means that the output is high during program interruptions (eg. debugging).
+    pub fn set_inverted(&mut self, inverted: bool) {
+        // Unsafe: OK because it's a CCx register (see .register())
+        unsafe { &mut *self.channel.register() }.$ccX_ctrl.modify(|_, w| w.outinv().bit(inverted));
+    }
+}
+
+impl<P> embedded_hal::PwmPin for RoutedTimerChannel<$TimerN, $ChannelX, P> {
+    type Duty = u16; // FIXME check the extreme behaviors
+
+    fn enable(&mut self) {
+        // Unsafe: OK because it's a CCx register (see .register())
+        unsafe { &mut *self.channel.register() }.$ccX_ctrl.modify(|_, w| w.mode().pwm());
+
+        #[cfg(feature = "chip-efm32gg")]
+        {
+            // FIXME This is actually concurrency-unsafe as it performs a read-modify-write on a
+            // peripheral that's not fully owned by us. Could be solved easily with svd2rust supported
+            // bit-banding, or hard (with potential for error because $ccXpen bit position can't be read
+            // from the register crate)
+            unsafe { &mut *self.channel.register() }.route.modify(|_, w| w.$ccXpen().set_bit());
+        }
+        #[cfg(feature = "chip-efr32xg1")]
+        {
+            unsafe { &mut *self.channel.register() }.routepen.modify(|_, w| w.$ccXpen().set_bit());
+        }
+    }
+    #[cfg(feature = "chip-efm32gg")]
+    fn disable(&mut self) {
+        // FIXME see enable
+        unsafe { &mut *self.channel.register() }.route.modify(|_, w| w.$ccXpen().clear_bit());
+    }
+    #[cfg(feature = "chip-efr32xg1")]
+    fn disable(&mut self) {
+        // FIXME see enable
+        unsafe { &mut *self.channel.register() }.routepen.modify(|_, w| w.$ccXpen().clear_bit());
+    }
+    fn get_duty(&self) -> Self::Duty {
+        // Unsafe: Accessign a CCx register, see .register()
+        unsafe { &*self.channel.register() }.$ccX_ccv.read().ccv().bits() as Self::Duty
+    }
+    fn get_max_duty(&self) -> Self::Duty {
+        // Unsafe: Read-only access to a register shared among the pins and thus not written to by
+        // anyone else (besides, it's a guaranteed atomic read)
+        unsafe { &*self.channel.register() }.top.read().bits() as Self::Duty
+    }
+    fn set_duty(&mut self, duty: Self::Duty) {
+        // Unsafe: OK because it's a CC0 register (see .register())
+        unsafe { &mut *self.channel.register() }.$ccX_ccv.modify(|_, w| unsafe { w.ccv().bits(duty) })
     }
 }
 
@@ -241,5 +361,29 @@ impl Timer1 {
 
         // FIXME as above
         self.register.cmd.write(|w| w.start().bit(true));
+    }
+}
+
+#[cfg(feature = "chip-efr32xg1")]
+impl TimerChannel<Timer0, Channel0> {
+    pub fn route(self, pin: gpio::pins::PD11<gpio::Output>) -> RoutedTimerChannel<Timer0, Channel0, gpio::pins::PD11<gpio::Output>> {
+        // FIXME see enable method
+        unsafe { &mut *self.register() }.routeloc0.modify(|_, w| w.cc0loc().loc19());
+        RoutedTimerChannel {
+            channel: self,
+            pin
+        }
+    }
+}
+
+#[cfg(feature = "chip-efr32xg1")]
+impl TimerChannel<Timer0, Channel1> {
+    pub fn route(self, pin: gpio::pins::PD12<gpio::Output>) -> RoutedTimerChannel<Timer0, Channel1, gpio::pins::PD12<gpio::Output>> {
+        // FIXME see enable method
+        unsafe { &mut *self.register() }.routeloc0.modify(|_, w| w.cc1loc().loc19());
+        RoutedTimerChannel {
+            channel: self,
+            pin
+        }
     }
 }
