@@ -387,3 +387,15 @@ impl TimerChannel<Timer0, Channel1> {
         }
     }
 }
+
+#[cfg(feature = "chip-efr32xg1")]
+impl TimerChannel<Timer0, Channel2> {
+    pub fn route(self, pin: gpio::pins::PD13<gpio::Output>) -> RoutedTimerChannel<Timer0, Channel2, gpio::pins::PD13<gpio::Output>> {
+        // FIXME see enable method
+        unsafe { &mut *self.register() }.routeloc0.modify(|_, w| w.cc2loc().loc19());
+        RoutedTimerChannel {
+            channel: self,
+            pin
+        }
+    }
+}
