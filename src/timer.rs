@@ -31,8 +31,8 @@ pub struct TimerChannel<Timer, Channel> {
 }
 
 pub struct RoutedTimerChannel<Timer, Channel, Pin> {
-    pin: Pin,
-    channel: TimerChannel<Timer, Channel>
+    pub(crate) pin: Pin,
+    pub(crate) channel: TimerChannel<Timer, Channel>
 }
 
 macro_rules! timer {
@@ -227,7 +227,7 @@ impl TimerChannel<$TimerN, $ChannelX> {
     ///
     /// Accessing that is safe only to the CCx registers of this block, as those are exclusive to
     /// this struct which by construction gets only created once.
-    fn register(&self) -> *mut registers::$timerN::RegisterBlock {
+    pub(crate) fn register(&self) -> *mut registers::$timerN::RegisterBlock {
         registers::$TIMERn::ptr() as *mut _
     }
 }
@@ -329,73 +329,3 @@ timer!(TIMER0, TIMER0Clk, Timer0, timer0);
 timer!(TIMER1, TIMER1Clk, Timer1, timer1);
 #[cfg(feature = "_has_timer2")]
 timer!(TIMER2, TIMER2Clk, Timer2, timer2);
-
-use crate::gpio;
-
-#[cfg(feature = "chip-efm32gg")]
-impl Timer2 {
-    // FIXME This should work more on type level, return Channel types and consume pins
-    pub fn configure_route0(
-        &mut self,
-//         cc0: Option<>,
-//         cc1: Option<>,
-//         cc2: Option<>,
-    ) {
-        self.register.route.modify(|_, w| w.location().variant(registers::timer2::route::LOCATIONW::LOC0));
-
-        // FIXME that's not the sequence I'd usually execute, I'd rather to this later.
-        self.register.cmd.write(|w| w.start().bit(true));
-    }
-}
-
-#[cfg(feature = "chip-efm32gg")]
-impl Timer1 {
-    // FIXME as above
-    pub fn configure_route2(
-            &mut self,
-            _cc0: gpio::pins::PB0<gpio::Output>,
-            _cc1: gpio::pins::PB1<gpio::Output>,
-            _cc2: gpio::pins::PB2<gpio::Output>
-    ) {
-        self.register.route.modify(|_, w| w.location().variant(registers::timer1::route::LOCATIONW::LOC2));
-
-        // FIXME as above
-        self.register.cmd.write(|w| w.start().bit(true));
-    }
-}
-
-#[cfg(feature = "chip-efr32xg1")]
-impl TimerChannel<Timer0, Channel0> {
-    pub fn route(self, pin: gpio::pins::PD11<gpio::Output>) -> RoutedTimerChannel<Timer0, Channel0, gpio::pins::PD11<gpio::Output>> {
-        // FIXME see enable method
-        unsafe { &mut *self.register() }.routeloc0.modify(|_, w| w.cc0loc().loc19());
-        RoutedTimerChannel {
-            channel: self,
-            pin
-        }
-    }
-}
-
-#[cfg(feature = "chip-efr32xg1")]
-impl TimerChannel<Timer0, Channel1> {
-    pub fn route(self, pin: gpio::pins::PD12<gpio::Output>) -> RoutedTimerChannel<Timer0, Channel1, gpio::pins::PD12<gpio::Output>> {
-        // FIXME see enable method
-        unsafe { &mut *self.register() }.routeloc0.modify(|_, w| w.cc1loc().loc19());
-        RoutedTimerChannel {
-            channel: self,
-            pin
-        }
-    }
-}
-
-#[cfg(feature = "chip-efr32xg1")]
-impl TimerChannel<Timer0, Channel2> {
-    pub fn route(self, pin: gpio::pins::PD13<gpio::Output>) -> RoutedTimerChannel<Timer0, Channel2, gpio::pins::PD13<gpio::Output>> {
-        // FIXME see enable method
-        unsafe { &mut *self.register() }.routeloc0.modify(|_, w| w.cc2loc().loc19());
-        RoutedTimerChannel {
-            channel: self,
-            pin
-        }
-    }
-}
