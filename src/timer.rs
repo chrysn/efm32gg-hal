@@ -227,12 +227,17 @@ impl TimerChannel<$TimerN, $ChannelX> {
     ///
     /// Accessing that is safe only to the CCx registers of this block, as those are exclusive to
     /// this struct which by construction gets only created once.
-    pub(crate) fn register(&self) -> *mut registers::$timerN::RegisterBlock {
+    pub(crate) fn register() -> *mut registers::$timerN::RegisterBlock {
         registers::$TIMERn::ptr() as *mut _
     }
 }
 
 impl<P> RoutedTimerChannel<$TimerN, $ChannelX, P> {
+    // Like TimerChannel::register()
+    fn register(&self) -> *mut registers::$timerN::RegisterBlock {
+        registers::$TIMERn::ptr() as *mut _
+    }
+
     /// Configure whether the output channel is inverted (false: low duty cycle means line is low
     /// most of the time, true: low duty cycle means line is high most of the time).
     ///
@@ -240,7 +245,7 @@ impl<P> RoutedTimerChannel<$TimerN, $ChannelX, P> {
     /// also means that the output is high during program interruptions (eg. debugging).
     pub fn set_inverted(&mut self, inverted: bool) {
         // Unsafe: OK because it's a CCx register (see .register())
-        unsafe { &mut *self.channel.register() }.$ccX_ctrl.modify(|_, w| w.outinv().bit(inverted));
+        unsafe { &mut *self.register() }.$ccX_ctrl.modify(|_, w| w.outinv().bit(inverted));
     }
 }
 
@@ -249,7 +254,7 @@ impl<P> embedded_hal::PwmPin for RoutedTimerChannel<$TimerN, $ChannelX, P> {
 
     fn enable(&mut self) {
         // Unsafe: OK because it's a CCx register (see .register())
-        unsafe { &mut *self.channel.register() }.$ccX_ctrl.modify(|_, w| w.mode().pwm());
+        unsafe { &mut *self.register() }.$ccX_ctrl.modify(|_, w| w.mode().pwm());
 
         #[cfg(feature = "chip-efm32gg")]
         {
@@ -257,35 +262,35 @@ impl<P> embedded_hal::PwmPin for RoutedTimerChannel<$TimerN, $ChannelX, P> {
             // peripheral that's not fully owned by us. Could be solved easily with svd2rust supported
             // bit-banding, or hard (with potential for error because $ccXpen bit position can't be read
             // from the register crate)
-            unsafe { &mut *self.channel.register() }.route.modify(|_, w| w.$ccXpen().set_bit());
+            unsafe { &mut *self.register() }.route.modify(|_, w| w.$ccXpen().set_bit());
         }
         #[cfg(feature = "chip-efr32xg1")]
         {
-            unsafe { &mut *self.channel.register() }.routepen.modify(|_, w| w.$ccXpen().set_bit());
+            unsafe { &mut *self.register() }.routepen.modify(|_, w| w.$ccXpen().set_bit());
         }
     }
     #[cfg(feature = "chip-efm32gg")]
     fn disable(&mut self) {
         // FIXME see enable
-        unsafe { &mut *self.channel.register() }.route.modify(|_, w| w.$ccXpen().clear_bit());
+        unsafe { &mut *self.register() }.route.modify(|_, w| w.$ccXpen().clear_bit());
     }
     #[cfg(feature = "chip-efr32xg1")]
     fn disable(&mut self) {
         // FIXME see enable
-        unsafe { &mut *self.channel.register() }.routepen.modify(|_, w| w.$ccXpen().clear_bit());
+        unsafe { &mut *self.register() }.routepen.modify(|_, w| w.$ccXpen().clear_bit());
     }
     fn get_duty(&self) -> Self::Duty {
         // Unsafe: Accessign a CCx register, see .register()
-        unsafe { &*self.channel.register() }.$ccX_ccv.read().ccv().bits() as Self::Duty
+        unsafe { &*self.register() }.$ccX_ccv.read().ccv().bits() as Self::Duty
     }
     fn get_max_duty(&self) -> Self::Duty {
         // Unsafe: Read-only access to a register shared among the pins and thus not written to by
         // anyone else (besides, it's a guaranteed atomic read)
-        unsafe { &*self.channel.register() }.top.read().bits() as Self::Duty
+        unsafe { &*self.register() }.top.read().bits() as Self::Duty
     }
     fn set_duty(&mut self, duty: Self::Duty) {
         // Unsafe: OK because it's a CC0 register (see .register())
-        unsafe { &mut *self.channel.register() }.$ccX_ccv.modify(|_, w| unsafe { w.ccv().bits(duty) })
+        unsafe { &mut *self.register() }.$ccX_ccv.modify(|_, w| unsafe { w.ccv().bits(duty) })
     }
 }
 
