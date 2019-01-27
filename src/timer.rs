@@ -30,6 +30,18 @@ pub struct TimerChannel<Timer, Channel> {
     _phantom: PhantomData<(Timer, Channel)>,
 }
 
+impl<T, C> TimerChannel<T, C> {
+    pub fn route<P>(self, pin: P) -> RoutedTimerChannel<T, C, P> where
+        P: crate::routing::HasLocForFunction<T, C>,
+    {
+        unsafe { P::configure() };
+        RoutedTimerChannel {
+            channel: self,
+            pin
+        }
+    }
+}
+
 pub struct RoutedTimerChannel<Timer, Channel, Pin> {
     pub(crate) pin: Pin,
     pub(crate) channel: TimerChannel<Timer, Channel>
