@@ -31,6 +31,11 @@ pub struct TimerChannel<Timer, Channel> {
 }
 
 impl<T, C> TimerChannel<T, C> {
+    /// Configure a route from the timer channel to the given output pin.
+    ///
+    /// This changes the timer's mode to PWM, as that's the only mode currently in use.
+    ///
+    /// The pin will not reliably be enabled or disabled upon initialization.
     pub fn route<P>(self, pin: P) -> RoutedTimerChannel<T, C, P> where
         P: crate::routing::HasLocForFunction<T, C>,
     {
@@ -39,6 +44,27 @@ impl<T, C> TimerChannel<T, C> {
             channel: self,
             pin
         }
+    }
+}
+
+impl<T, C, P> RoutedTimerChannel<T, C, P> where
+    P: crate::routing::HasLocForFunction<T, C>,
+    TimerChannel<T, C>: embedded_hal::PwmPin,
+{
+    /// Free the routed timer channel's GPIO pin.
+    ///
+    /// This is the inverse of `TimerChannel::route(timerchannel, pin)`, but does not change the
+    /// channel's route (as it's immaterial once the pin is disabled), and leaves the channel's
+    /// mode at PWM.
+    ///
+    /// It does, however, disable the channel, for otherwise the pin would stay influenced by a now
+    /// unrelated peripheral.
+    pub fn unroute(mut self) -> (TimerChannel<T, C>, P) {
+        use embedded_hal::PwmPin;
+
+        self.channel.disable();
+
+        (self.channel, self.pin)
     }
 }
 
@@ -265,32 +291,28 @@ impl<P> embedded_hal::PwmPin for RoutedTimerChannel<$TimerN, $ChannelX, P> {
     type Duty = u16; // FIXME check the extreme behaviors
 
     fn enable(&mut self) {
-        // Unsafe: OK because it's a CCx register (see .register())
-        unsafe { &mut *self.register() }.$ccX_ctrl.modify(|_, w| w.mode().pwm());
-
-        #[cfg(feature = "chip-efm32gg")]
+        // FIXME https://github.com/chrysn/efm32gg-hal/issues/1
+        #[cfg(not(feature = "_routing_per_function"))]
         {
-            // FIXME This is actually concurrency-unsafe as it performs a read-modify-write on a
-            // peripheral that's not fully owned by us. Could be solved easily with svd2rust supported
-            // bit-banding, or hard (with potential for error because $ccXpen bit position can't be read
-            // from the register crate)
             unsafe { &mut *self.register() }.route.modify(|_, w| w.$ccXpen().set_bit());
         }
-        #[cfg(feature = "chip-efr32xg1")]
+        #[cfg(feature = "_routing_per_function")]
         {
             unsafe { &mut *self.register() }.routepen.modify(|_, w| w.$ccXpen().set_bit());
         }
     }
-    #[cfg(feature = "chip-efm32gg")]
     fn disable(&mut self) {
-        // FIXME see enable
-        unsafe { &mut *self.register() }.route.modify(|_, w| w.$ccXpen().clear_bit());
+        // FIXME https://github.com/chrysn/efm32gg-hal/issues/1
+        #[cfg(not(feature = "_routing_per_function"))]
+        {
+            unsafe { &mut *self.register() }.route.modify(|_, w| w.$ccXpen().clear_bit());
+        }
+        #[cfg(feature = "_routing_per_function")]
+        {
+            unsafe { &mut *self.register() }.routepen.modify(|_, w| w.$ccXpen().clear_bit());
+        }
     }
-    #[cfg(feature = "chip-efr32xg1")]
-    fn disable(&mut self) {
-        // FIXME see enable
-        unsafe { &mut *self.register() }.routepen.modify(|_, w| w.$ccXpen().clear_bit());
-    }
+
     fn get_duty(&self) -> Self::Duty {
         // Unsafe: Accessign a CCx register, see .register()
         unsafe { &*self.register() }.$ccX_ccv.read().ccv().bits() as Self::Duty

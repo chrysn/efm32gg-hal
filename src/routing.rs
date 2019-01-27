@@ -6,6 +6,8 @@
 
 /// Indicates that a given pin is a valid routing location for a given peripheral and function
 pub trait HasLocForFunction<P, F> {
+    /// Configure and enable the routed pin; what this means in detail depends on the main caller
+    /// (eg. TimerChannel::route).
     unsafe fn configure();
 }
 

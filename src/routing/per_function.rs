@@ -1,11 +1,17 @@
 #[macro_export]
 macro_rules! timerchannel_pin {
-    ($TimerN: ident, $ChannelX: ident, $ccXloc: ident, $Pin: ident, $locI: ident) => {
+    ($TimerN: ident, $ChannelX: ident, $Pin: ident, $locI: ident, $ccXloc: ident, $ccX_ctrl: ident) => {
 
 impl super::HasLocForFunction<$TimerN, $ChannelX> for crate::gpio::pins::$Pin<crate::gpio::Output> {
     unsafe fn configure() {
-        // FIXME see enable method
-        unsafe { &mut *crate::timer::TimerChannel::<$TimerN, $ChannelX>::register() }.routeloc0.modify(|_, w| w.$ccXloc().$locI());
+        // unsafe: See the individual accesses on reg
+        let reg = &mut *crate::timer::TimerChannel::<$TimerN, $ChannelX>::register();
+
+        // FIXME https://github.com/chrysn/efm32gg-hal/issues/1
+        reg.routeloc0.modify(|_, w| w.$ccXloc().$locI());
+
+        // This is a safe access because it only acts on a ccX register
+        reg.$ccX_ctrl.modify(|_, w| w.mode().pwm());
     }
 }
 
