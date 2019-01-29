@@ -1,42 +1,12 @@
-use crate::timer::{TimerChannel, Timer1, Timer2};
-use crate::gpio;
+//! The full list was manually entered from the EFM32GG990 data sheet, which should be the most
+//! comprehensive version. (The EFM32GG series was not observed to have any conflicts between its
+//! members, so if anything is missing here that's present on another GG, it should be possible to
+//! just add it.)
 
-impl Timer2 {
-    // FIXME This should work more on type level, return Channel types and consume pins
-    pub fn configure_route0(
-        &mut self,
-//         cc0: Option<>,
-//         cc1: Option<>,
-//         cc2: Option<>,
-    ) {
-        self.register.route.modify(|_, w| w.location().variant(registers::timer2::route::LOCATIONW::LOC0));
-
-        // FIXME that's not the sequence I'd usually execute, I'd rather to this later.
-        self.register.cmd.write(|w| w.start().bit(true));
-    }
-}
-
-impl Timer1 {
-    // FIXME as above
-    pub fn configure_route2(
-            &mut self,
-            _cc0: gpio::pins::PB0<gpio::Output>,
-            _cc1: gpio::pins::PB1<gpio::Output>,
-            _cc2: gpio::pins::PB2<gpio::Output>
-    ) {
-        self.register.route.modify(|_, w| w.location().variant(registers::timer1::route::LOCATIONW::LOC2));
-
-        // FIXME as above
-        self.register.cmd.write(|w| w.start().bit(true));
-    }
-}
-
-// The full list of the EFM32GG990 data sheet, which should be the most comprehensive version. (The
-// EFM32GG series was not observed to have any conflicts between its members, so if anything is
-// missing here that's present on another GG, it should be possible to just add it.)
-
-use crate::timer::{Timer0, Timer3, Channel0, Channel1, Channel2};
+use crate::timer::{Timer0, Timer1, Timer2, Timer3, Channel0, Channel1, Channel2};
 use super::per_peripheral::timerperipheral_pin;
+
+// Routes with pins on duplicate routes still need some macro adjustment
 
 timerperipheral_pin!(Timer0, Channel0, PA0, is_loc0, cc0_ctrl);
 // timerperipheral_pin!(Timer0, Channel0, PA0, is_loc1, cc0_ctrl);

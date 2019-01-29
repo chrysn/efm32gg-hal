@@ -87,105 +87,8 @@ pub struct $TimerN {
     clock: cmu::$TIMERnClk,
 }
 
-impl embedded_hal::Pwm for $TimerN {
-    type Channel = i32; // FIXME needs atype
-    type Time = (); // FIXME
-    type Duty = u16; // FIXME check the extreme behaviors
-
-    fn enable(&mut self, channel: Self::Channel) {
-        match channel {
-            0 => {
-                #[cfg(feature = "chip-efm32gg")]
-                self.register.route.modify(|_, w| w.cc0pen().set_bit());
-                #[cfg(feature = "chip-efr32xg1")]
-                self.register.routepen.modify(|_, w| w.cc0pen().set_bit());
-                self.register.cc0_ctrl.modify(|_, w| w.mode().variant(registers::$timerN::cc0_ctrl::MODEW::PWM));
-            },
-            1 => {
-                #[cfg(feature = "chip-efm32gg")]
-                self.register.route.modify(|_, w| w.cc1pen().set_bit());
-                #[cfg(feature = "chip-efr32xg1")]
-                self.register.routepen.modify(|_, w| w.cc1pen().set_bit());
-                self.register.cc1_ctrl.modify(|_, w| w.mode().variant(registers::$timerN::cc1_ctrl::MODEW::PWM));
-            },
-            2 => {
-                #[cfg(feature = "chip-efm32gg")]
-                self.register.route.modify(|_, w| w.cc2pen().set_bit());
-                #[cfg(feature = "chip-efr32xg1")]
-                self.register.routepen.modify(|_, w| w.cc2pen().set_bit());
-                self.register.cc2_ctrl.modify(|_, w| w.mode().variant(registers::$timerN::cc2_ctrl::MODEW::PWM));
-            },
-            _ => panic!("Nonexistent channel"),
-        }
-    }
-
-    #[cfg(feature = "chip-efm32gg")]
-    fn disable(&mut self, channel: Self::Channel) {
-        match channel {
-            0 => self.register.route.modify(|_, w| w.cc0pen().clear_bit()),
-            1 => self.register.route.modify(|_, w| w.cc1pen().clear_bit()),
-            2 => self.register.route.modify(|_, w| w.cc2pen().clear_bit()),
-            _ => panic!("Nonexistent channel"),
-        }
-    }
-
-    #[cfg(feature = "chip-efr32xg1")]
-    fn disable(&mut self, channel: Self::Channel) {
-        match channel {
-            0 => self.register.routepen.modify(|_, w| w.cc0pen().clear_bit()),
-            1 => self.register.routepen.modify(|_, w| w.cc1pen().clear_bit()),
-            2 => self.register.routepen.modify(|_, w| w.cc2pen().clear_bit()),
-            _ => panic!("Nonexistent channel"),
-        }
-    }
-
-    fn get_period(&self) -> () {
-        unimplemented!();
-    }
-
-    fn set_period<P>(&mut self, time: P) {
-        unimplemented!();
-    }
-
-    fn get_max_duty(&self) -> Self::Duty {
-        self.register.top.read().top().bits()
-    }
-
-    fn set_duty(&mut self, channel: i32, duty: u16) {
-        match channel {
-            0 => self.register.cc0_ccv.modify(|_, w| unsafe { w.ccv().bits(duty) }),
-            1 => self.register.cc1_ccv.modify(|_, w| unsafe { w.ccv().bits(duty) }),
-            2 => self.register.cc2_ccv.modify(|_, w| unsafe { w.ccv().bits(duty) }),
-            _ => panic!("Nonexistent channel"),
-        }
-    }
-
-    fn get_duty(&self, channel: i32) -> u16 {
-        match channel {
-            0 => self.register.cc0_ccv.read().ccv().bits(),
-            1 => self.register.cc1_ccv.read().ccv().bits(),
-            2 => self.register.cc2_ccv.read().ccv().bits(),
-            _ => panic!("Nonexistent channel"),
-        }
-    }
-}
-
 impl $TimerN {
-    /// Configure whether the output is inverted (false: low duty cycle means line is low most of
-    /// the time, true: low duty cycle means line is high most of the time).
-    ///
-    /// While this can largely be adjusted for by setting the duty to max-n instead of n, inverted
-    /// also means that the output is high during program interruptions (eg. debugging).
-    pub fn set_inverted(&mut self, channel: <Self as embedded_hal::Pwm>::Channel, inverted: bool) {
-        match channel {
-            0 => self.register.cc0_ctrl.modify(|_, w| w.outinv().bit(inverted)),
-            1 => self.register.cc1_ctrl.modify(|_, w| w.outinv().bit(inverted)),
-            2 => self.register.cc2_ctrl.modify(|_, w| w.outinv().bit(inverted)),
-            _ => panic!("Nonexistent channel"),
-        }
-    }
-
-    /// Configure the top value for this channel.
+    /// Configure the top value for this timer.
     ///
     /// As this limits the duty cycle, it can be read back using the PWM method get_max_duty().
     pub fn set_top(&mut self, top: u16) {
@@ -251,14 +154,6 @@ impl $TimerN {
             channel2: TimerChannel { _phantom: PhantomData },
         }
     }
-
-
-    /// Do something else with the registers; this is marked unsafe because one might do things
-    /// like re-route pins
-    pub unsafe fn with_registers<T>(&mut self, action: impl FnOnce(&mut registers::$TIMERn) ->T) -> T {
-        action(&mut self.register)
-    }
-
 }
 
 /// The channels available on this particular timer. This struct is expected to grow, so don't
