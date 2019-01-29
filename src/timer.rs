@@ -84,7 +84,7 @@ impl TimerExt<cmu::$TIMERnClk, $TimerN> for registers::$TIMERn {
 }
 
 pub struct $TimerN {
-    register: registers::$TIMERn,
+    pub(crate) register: registers::$TIMERn,
     clock: cmu::$TIMERnClk,
 }
 

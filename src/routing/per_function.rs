@@ -20,4 +20,4 @@ impl super::HasLocForFunction<$TimerN, $ChannelX> for crate::gpio::pins::$Pin<cr
     }
 }
 
-pub use timerchannel_pin;
+pub(crate) use timerchannel_pin;
