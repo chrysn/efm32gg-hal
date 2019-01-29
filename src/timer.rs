@@ -5,9 +5,6 @@
 
 use core::marker::PhantomData;
 
-use registers;
-use crate::cmu;
-
 pub trait TimerExt<Clk, Timer> {
     fn with_clock(self, clock: Clk) -> Timer;
 }
@@ -24,6 +21,7 @@ pub struct Channels<C0, C1, C2> {
     pub channel1: C1,
     pub channel2: C2,
 }
+
 
 /// Individual channel of a timer, accessible through a timer's .split() method.
 pub struct TimerChannel<Timer, Channel> {
@@ -75,6 +73,13 @@ pub struct RoutedTimerChannel<Timer, Channel, Pin> {
 
 macro_rules! timer {
     ($TIMERn: ident, $TIMERnClk: ident, $TimerN: ident, $timerN: ident) => {
+
+mod $timerN {
+
+use super::*;
+
+use crate::cmu;
+use registers;
 
 impl TimerExt<cmu::$TIMERnClk, $TimerN> for registers::$TIMERn {
     fn with_clock(self, mut clock: cmu::$TIMERnClk) -> $TimerN {
@@ -245,6 +250,7 @@ impl $TimerN {
     pub unsafe fn with_registers<T>(&mut self, action: impl FnOnce(&mut registers::$TIMERn) ->T) -> T {
         action(&mut self.register)
     }
+
 }
 
 // Needs to be actually repeated over the channels because the channel structs can't, for example,
@@ -253,6 +259,10 @@ impl $TimerN {
 timerchannel!($TIMERn, $TimerN, $timerN, Channel0, cc0pen, cc0_ctrl, cc0_ccv);
 timerchannel!($TIMERn, $TimerN, $timerN, Channel1, cc1pen, cc1_ctrl, cc1_ccv);
 timerchannel!($TIMERn, $TimerN, $timerN, Channel2, cc2pen, cc2_ctrl, cc2_ccv);
+
+}
+
+pub use $timerN::$TimerN;
 
     }
 }
