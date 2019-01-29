@@ -50,6 +50,8 @@ pub struct Clocks {
     pub timer1: TIMER1Clk,
     #[cfg(feature = "_has_timer2")]
     pub timer2: TIMER2Clk,
+    #[cfg(feature = "_has_timer3")]
+    pub timer3: TIMER3Clk,
 }
 
 pub struct I2C0Clk {
@@ -94,6 +96,8 @@ timerclk!(TIMER0Clk, timer0);
 timerclk!(TIMER1Clk, timer1);
 #[cfg(feature = "_has_timer2")]
 timerclk!(TIMER2Clk, timer2);
+#[cfg(feature = "_has_timer3")]
+timerclk!(TIMER3Clk, timer3);
 
 pub struct GPIOClk {
     _private: (),
@@ -122,6 +126,8 @@ impl Cmu {
             timer1: TIMER1Clk { _private: () },
             #[cfg(feature = "_has_timer2")]
             timer2: TIMER2Clk { _private: () },
+            #[cfg(feature = "_has_timer3")]
+            timer3: TIMER3Clk { _private: () },
         }
     }
 }

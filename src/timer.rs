@@ -397,3 +397,9 @@ timer!(TIMER2, TIMER2Clk, Timer2, timer2, [
        (Channel1, cc1pen, cc1_ctrl, cc1_ccv),
        (Channel2, cc2pen, cc2_ctrl, cc2_ccv),
     ]);
+#[cfg(feature = "_has_timer3")]
+timer!(TIMER3, TIMER3Clk, Timer3, timer3, [
+       (Channel0, cc0pen, cc0_ctrl, cc0_ccv),
+       (Channel1, cc1pen, cc1_ctrl, cc1_ccv),
+       (Channel2, cc2pen, cc2_ctrl, cc2_ccv),
+    ]);

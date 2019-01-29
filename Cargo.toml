@@ -39,10 +39,11 @@ unproven = []
 # functions routable, not only peripherals as a whole.
 _routing_per_function = []
 
-chip-efm32gg = [ "efm32gg990", "_has_timer2" ]
+chip-efm32gg = [ "efm32gg990", "_has_timer2", "_has_timer3" ]
 chip-efr32xg1 = [ "efr32xg1", "_routing_per_function" ]
 
 # Marker features pulled in by the individual chip features. Enabling them
 # manually results in build-time errors (as clocks or peripherals are accessed
 # that are not available).
 _has_timer2 = []
+_has_timer3 = []
