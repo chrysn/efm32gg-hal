@@ -226,6 +226,19 @@ impl $TimerN {
         self.register.cmd.write(|w| w.start().bit(true));
     }
 
+    #[cfg(not(feature = "_routing_per_function"))]
+    /// Preconfigure a pin route on the whole device
+    ///
+    /// This has no immediate effect as (when a full $TimerN is still available) all its output
+    /// pins are disabled, but prepares for when the individual output channels are `.route()`d.
+    ///
+    /// This is only present for the original EFM32 devices (up to Wonder Gecko) that have per-peripheral
+    /// routing. In those devices, routing needs to be put in place while the whole peripheral is
+    /// still mutable -- and the later routing functions only assert on that register's state.
+    pub fn preroute(&mut self, route: registers::$timerN::route::LOCATIONW) {
+        self.register.route.modify(|_, w| w.location().variant(route))
+    }
+
     /// Dissect this timer into its various channels, consuming the timer.
     ///
     /// The returning struct is non-public intentionally, as it is expected to grow when additional
