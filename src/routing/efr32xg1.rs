@@ -1,6 +1,6 @@
-/// Route information taken from [Mighty Gecko data
-/// sheet](https://www.silabs.com/documents/public/data-sheets/efr32mg1-datasheet.pdf); Flex- and
-/// Blue Gecko appear to be the same.
+//! Route information taken from [Mighty Gecko data
+//! sheet](https://www.silabs.com/documents/public/data-sheets/efr32mg1-datasheet.pdf); Flex- and
+//! Blue Gecko appear to be the same.
 
 use crate::timer::{Timer0, Channel0, Channel1, Channel2};
 use super::per_function::timerchannel_pin;
