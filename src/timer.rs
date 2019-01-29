@@ -16,12 +16,6 @@ pub struct Channel1 {}
 /// Marker type for timer channels, signifying they're a CC channel 2 of whichever timer
 pub struct Channel2 {}
 
-pub struct Channels<C0, C1, C2> {
-    pub channel0: C0,
-    pub channel1: C1,
-    pub channel2: C2,
-}
-
 
 /// Individual channel of a timer, accessible through a timer's .split() method.
 pub struct TimerChannel<Timer, Channel> {
@@ -72,7 +66,7 @@ pub struct RoutedTimerChannel<Timer, Channel, Pin> {
 }
 
 macro_rules! timer {
-    ($TIMERn: ident, $TIMERnClk: ident, $TimerN: ident, $timerN: ident) => {
+    ($TIMERn: ident, $TIMERnClk: ident, $TimerN: ident, $timerN: ident, $channel: tt) => {
 
 mod $timerN {
 
@@ -232,11 +226,12 @@ impl $TimerN {
         self.register.cmd.write(|w| w.start().bit(true));
     }
 
-    pub fn split(self) -> Channels<
-        TimerChannel<$TimerN, Channel0>,
-        TimerChannel<$TimerN, Channel1>,
-        TimerChannel<$TimerN, Channel2>,
-    > {
+    /// Dissect this timer into its various channels, consuming the timer.
+    ///
+    /// The returning struct is non-public intentionally, as it is expected to grow when additional
+    /// channels are implemented. Channels can be moved out of this struct as `.channel[0-2]`
+    /// attributes.
+    pub fn split(self) -> Channels {
         Channels {
             channel0: TimerChannel { _phantom: PhantomData },
             channel1: TimerChannel { _phantom: PhantomData },
@@ -251,6 +246,14 @@ impl $TimerN {
         action(&mut self.register)
     }
 
+}
+
+/// The channels available on this particular timer. This struct is expected to grow, so don't
+/// destructure it but rather move out of it what you need.
+pub struct Channels {
+    pub channel0: TimerChannel<$TimerN, Channel0>,
+    pub channel1: TimerChannel<$TimerN, Channel1>,
+    pub channel2: TimerChannel<$TimerN, Channel2>,
 }
 
 // Needs to be actually repeated over the channels because the channel structs can't, for example,
@@ -378,7 +381,19 @@ impl InterruptFlag {
     const fn bits(&self) -> u32 { *self as u32 }
 }
 
-timer!(TIMER0, TIMER0Clk, Timer0, timer0);
-timer!(TIMER1, TIMER1Clk, Timer1, timer1);
+timer!(TIMER0, TIMER0Clk, Timer0, timer0, [
+       (Channel0, cc0pen, cc0_ctrl, cc0_ccv),
+       (Channel1, cc1pen, cc1_ctrl, cc1_ccv),
+       (Channel2, cc2pen, cc2_ctrl, cc2_ccv),
+    ]);
+timer!(TIMER1, TIMER1Clk, Timer1, timer1, [
+       (Channel0, cc0pen, cc0_ctrl, cc0_ccv),
+       (Channel1, cc1pen, cc1_ctrl, cc1_ccv),
+       (Channel2, cc2pen, cc2_ctrl, cc2_ccv),
+    ]);
 #[cfg(feature = "_has_timer2")]
-timer!(TIMER2, TIMER2Clk, Timer2, timer2);
+timer!(TIMER2, TIMER2Clk, Timer2, timer2, [
+       (Channel0, cc0pen, cc0_ctrl, cc0_ccv),
+       (Channel1, cc1pen, cc1_ctrl, cc1_ccv),
+       (Channel2, cc2pen, cc2_ctrl, cc2_ccv),
+    ]);
