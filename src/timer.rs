@@ -292,25 +292,29 @@ impl<P> embedded_hal::PwmPin for RoutedTimerChannel<$TimerN, $ChannelX, P> {
 
     fn enable(&mut self) {
         // FIXME https://github.com/chrysn/efm32gg-hal/issues/1
-        #[cfg(not(feature = "_routing_per_function"))]
-        {
-            unsafe { &mut *self.register() }.route.modify(|_, w| w.$ccXpen().set_bit());
-        }
-        #[cfg(feature = "_routing_per_function")]
-        {
-            unsafe { &mut *self.register() }.routepen.modify(|_, w| w.$ccXpen().set_bit());
-        }
+        cortex_m::interrupt::free(|_| {
+            #[cfg(not(feature = "_routing_per_function"))]
+            {
+                unsafe { &mut *self.register() }.route.modify(|_, w| w.$ccXpen().set_bit());
+            }
+            #[cfg(feature = "_routing_per_function")]
+            {
+                unsafe { &mut *self.register() }.routepen.modify(|_, w| w.$ccXpen().set_bit());
+            }
+        });
     }
     fn disable(&mut self) {
         // FIXME https://github.com/chrysn/efm32gg-hal/issues/1
-        #[cfg(not(feature = "_routing_per_function"))]
-        {
-            unsafe { &mut *self.register() }.route.modify(|_, w| w.$ccXpen().clear_bit());
-        }
-        #[cfg(feature = "_routing_per_function")]
-        {
-            unsafe { &mut *self.register() }.routepen.modify(|_, w| w.$ccXpen().clear_bit());
-        }
+        cortex_m::interrupt::free(|_| {
+            #[cfg(not(feature = "_routing_per_function"))]
+            {
+                unsafe { &mut *self.register() }.route.modify(|_, w| w.$ccXpen().clear_bit());
+            }
+            #[cfg(feature = "_routing_per_function")]
+            {
+                unsafe { &mut *self.register() }.routepen.modify(|_, w| w.$ccXpen().clear_bit());
+            }
+        });
     }
 
     fn get_duty(&self) -> Self::Duty {

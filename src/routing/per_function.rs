@@ -8,7 +8,9 @@ impl super::HasLocForFunction<$TimerN, $ChannelX> for crate::gpio::pins::$Pin<cr
         let reg = &mut *crate::timer::TimerChannel::<$TimerN, $ChannelX>::register();
 
         // FIXME https://github.com/chrysn/efm32gg-hal/issues/1
-        reg.routeloc0.modify(|_, w| w.$ccXloc().$locI());
+        cortex_m::interrupt::free(|_| {
+            reg.routeloc0.modify(|_, w| w.$ccXloc().$locI());
+        });
 
         // This is a safe access because it only acts on a ccX register
         reg.$ccX_ctrl.modify(|_, w| w.mode().pwm());
