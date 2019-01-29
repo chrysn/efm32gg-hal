@@ -167,9 +167,9 @@ pub struct Channels {
 // Needs to be actually repeated over the channels because the channel structs can't, for example,
 // produce a .cc0_ctrl.modify() artifact because there is nothing to be generic over.
 
-timerchannel!($TIMERn, $TimerN, $timerN, Channel0, cc0pen, cc0_ctrl, cc0_ccv);
-timerchannel!($TIMERn, $TimerN, $timerN, Channel1, cc1pen, cc1_ctrl, cc1_ccv);
-timerchannel!($TIMERn, $TimerN, $timerN, Channel2, cc2pen, cc2_ctrl, cc2_ccv);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel0, cc0pen, cc0_ctrl, cc0_ccvb);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel1, cc1pen, cc1_ctrl, cc1_ccvb);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel2, cc2pen, cc2_ctrl, cc2_ccvb);
 
 }
 
@@ -179,7 +179,7 @@ pub use $timerN::$TimerN;
 }
 
 macro_rules! timerchannel {
-    ($TIMERn: ident, $TimerN: ident, $timerN: ident, $ChannelX: ident, $ccXpen: ident, $ccX_ctrl: ident, $ccX_ccv: ident) => {
+    ($TIMERn: ident, $TimerN: ident, $timerN: ident, $ChannelX: ident, $ccXpen: ident, $ccX_ctrl: ident, $ccX_ccvb: ident) => {
 
 impl TimerChannel<$TimerN, $ChannelX> {
     /// Get a pointer to the underlying timer's peripheral block.
@@ -240,7 +240,7 @@ impl<P> embedded_hal::PwmPin for RoutedTimerChannel<$TimerN, $ChannelX, P> {
 
     fn get_duty(&self) -> Self::Duty {
         // Unsafe: Accessign a CCx register, see .register()
-        unsafe { &*self.register() }.$ccX_ccv.read().ccv().bits() as Self::Duty
+        unsafe { &*self.register() }.$ccX_ccvb.read().ccvb().bits() as Self::Duty
     }
     fn get_max_duty(&self) -> Self::Duty {
         // Unsafe: Read-only access to a register shared among the pins and thus not written to by
@@ -249,7 +249,7 @@ impl<P> embedded_hal::PwmPin for RoutedTimerChannel<$TimerN, $ChannelX, P> {
     }
     fn set_duty(&mut self, duty: Self::Duty) {
         // Unsafe: OK because it's a CC0 register (see .register())
-        unsafe { &mut *self.register() }.$ccX_ccv.modify(|_, w| unsafe { w.ccv().bits(duty) })
+        unsafe { &mut *self.register() }.$ccX_ccvb.modify(|_, w| unsafe { w.ccvb().bits(duty) })
     }
 }
 
@@ -290,24 +290,24 @@ impl InterruptFlag {
 }
 
 timer!(TIMER0, TIMER0Clk, Timer0, timer0, [
-       (Channel0, cc0pen, cc0_ctrl, cc0_ccv),
-       (Channel1, cc1pen, cc1_ctrl, cc1_ccv),
-       (Channel2, cc2pen, cc2_ctrl, cc2_ccv),
+       (Channel0, cc0pen, cc0_ctrl, cc0_ccvb),
+       (Channel1, cc1pen, cc1_ctrl, cc1_ccvb),
+       (Channel2, cc2pen, cc2_ctrl, cc2_ccvb),
     ]);
 timer!(TIMER1, TIMER1Clk, Timer1, timer1, [
-       (Channel0, cc0pen, cc0_ctrl, cc0_ccv),
-       (Channel1, cc1pen, cc1_ctrl, cc1_ccv),
-       (Channel2, cc2pen, cc2_ctrl, cc2_ccv),
+       (Channel0, cc0pen, cc0_ctrl, cc0_ccvb),
+       (Channel1, cc1pen, cc1_ctrl, cc1_ccvb),
+       (Channel2, cc2pen, cc2_ctrl, cc2_ccvb),
     ]);
 #[cfg(feature = "_has_timer2")]
 timer!(TIMER2, TIMER2Clk, Timer2, timer2, [
-       (Channel0, cc0pen, cc0_ctrl, cc0_ccv),
-       (Channel1, cc1pen, cc1_ctrl, cc1_ccv),
-       (Channel2, cc2pen, cc2_ctrl, cc2_ccv),
+       (Channel0, cc0pen, cc0_ctrl, cc0_ccvb),
+       (Channel1, cc1pen, cc1_ctrl, cc1_ccvb),
+       (Channel2, cc2pen, cc2_ctrl, cc2_ccvb),
     ]);
 #[cfg(feature = "_has_timer3")]
 timer!(TIMER3, TIMER3Clk, Timer3, timer3, [
-       (Channel0, cc0pen, cc0_ctrl, cc0_ccv),
-       (Channel1, cc1pen, cc1_ctrl, cc1_ccv),
-       (Channel2, cc2pen, cc2_ctrl, cc2_ccv),
+       (Channel0, cc0pen, cc0_ctrl, cc0_ccvb),
+       (Channel1, cc1pen, cc1_ctrl, cc1_ccvb),
+       (Channel2, cc2pen, cc2_ctrl, cc2_ccvb),
     ]);
