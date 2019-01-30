@@ -25,7 +25,7 @@ pub struct TimerChannel<Timer, Channel> {
 impl<T, C> TimerChannel<T, C> {
     /// Configure a route from the timer channel to the given output pin.
     ///
-    /// This changes the timer's mode to PWM, as that's the only mode currently in use.
+    /// This routes the pin; whether it is set to Off or Pwm is managed though Pwm::enable/disable.
     ///
     /// The pin will not reliably be enabled or disabled upon initialization.
     pub fn route<P>(self, pin: P) -> RoutedTimerChannel<T, C, P> where
@@ -52,9 +52,7 @@ impl<T, C, P> RoutedTimerChannel<T, C, P> where
     /// It does, however, disable the channel, for otherwise the pin would stay influenced by a now
     /// unrelated peripheral.
     pub fn unroute(mut self) -> (TimerChannel<T, C>, P) {
-        use embedded_hal::PwmPin;
-
-        self.channel.disable();
+        unsafe { P::deconfigure() };
 
         (self.channel, self.pin)
     }
@@ -167,9 +165,9 @@ pub struct Channels {
 // Needs to be actually repeated over the channels because the channel structs can't, for example,
 // produce a .cc0_ctrl.modify() artifact because there is nothing to be generic over.
 
-timerchannel!($TIMERn, $TimerN, $timerN, Channel0, cc0pen, cc0_ctrl, cc0_ccvb);
-timerchannel!($TIMERn, $TimerN, $timerN, Channel1, cc1pen, cc1_ctrl, cc1_ccvb);
-timerchannel!($TIMERn, $TimerN, $timerN, Channel2, cc2pen, cc2_ctrl, cc2_ccvb);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel0, cc0_ctrl, cc0_ccvb);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel1, cc1_ctrl, cc1_ccvb);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel2, cc2_ctrl, cc2_ccvb);
 
 }
 
@@ -179,7 +177,7 @@ pub use $timerN::$TimerN;
 }
 
 macro_rules! timerchannel {
-    ($TIMERn: ident, $TimerN: ident, $timerN: ident, $ChannelX: ident, $ccXpen: ident, $ccX_ctrl: ident, $ccX_ccvb: ident) => {
+    ($TIMERn: ident, $TimerN: ident, $timerN: ident, $ChannelX: ident, $ccX_ctrl: ident, $ccX_ccvb: ident) => {
 
 impl TimerChannel<$TimerN, $ChannelX> {
     /// Get a pointer to the underlying timer's peripheral block.
@@ -188,6 +186,16 @@ impl TimerChannel<$TimerN, $ChannelX> {
     /// this struct which by construction gets only created once.
     pub(crate) fn register() -> *mut registers::$timerN::RegisterBlock {
         registers::$TIMERn::ptr() as *mut _
+    }
+
+    fn set_mode(&mut self, mode: ChannelMode) {
+        // Unsafe: OK because it's a CC0 register (see .register())
+        unsafe { &mut *Self::register() }.$ccX_ctrl.modify(|_, w| match mode {
+            ChannelMode::Off => w.mode().off(),
+            ChannelMode::InputCapture => w.mode().inputcapture(),
+            ChannelMode::OutputCompare => w.mode().outputcompare(),
+            ChannelMode::Pwm => w.mode().pwm(),
+        });
     }
 }
 
@@ -202,6 +210,10 @@ impl<P> RoutedTimerChannel<$TimerN, $ChannelX, P> {
     ///
     /// While this can largely be adjusted for by setting the duty to max-n instead of n, inverted
     /// also means that the output is high during program interruptions (eg. debugging).
+    ///
+    /// (Note that this *currently* does not affect the state of a disabled pin. It might become
+    /// convenient at a later time to change the enable/disable mechanism to something that *does*
+    /// respect the set_inverted setting.)
     pub fn set_inverted(&mut self, inverted: bool) {
         // Unsafe: OK because it's a CCx register (see .register())
         unsafe { &mut *self.register() }.$ccX_ctrl.modify(|_, w| w.outinv().bit(inverted));
@@ -212,30 +224,10 @@ impl<P> embedded_hal::PwmPin for RoutedTimerChannel<$TimerN, $ChannelX, P> {
     type Duty = u16; // FIXME check the extreme behaviors
 
     fn enable(&mut self) {
-        // FIXME https://github.com/chrysn/efm32gg-hal/issues/1
-        cortex_m::interrupt::free(|_| {
-            #[cfg(not(feature = "_routing_per_function"))]
-            {
-                unsafe { &mut *self.register() }.route.modify(|_, w| w.$ccXpen().set_bit());
-            }
-            #[cfg(feature = "_routing_per_function")]
-            {
-                unsafe { &mut *self.register() }.routepen.modify(|_, w| w.$ccXpen().set_bit());
-            }
-        });
+        self.channel.set_mode(ChannelMode::Pwm);
     }
     fn disable(&mut self) {
-        // FIXME https://github.com/chrysn/efm32gg-hal/issues/1
-        cortex_m::interrupt::free(|_| {
-            #[cfg(not(feature = "_routing_per_function"))]
-            {
-                unsafe { &mut *self.register() }.route.modify(|_, w| w.$ccXpen().clear_bit());
-            }
-            #[cfg(feature = "_routing_per_function")]
-            {
-                unsafe { &mut *self.register() }.routepen.modify(|_, w| w.$ccXpen().clear_bit());
-            }
-        });
+        self.channel.set_mode(ChannelMode::Off);
     }
 
     fn get_duty(&self) -> Self::Duty {
@@ -289,25 +281,33 @@ impl InterruptFlag {
     const fn bits(&self) -> u32 { *self as u32 }
 }
 
+/// Helper for TimerChannel.set_mode
+enum ChannelMode {
+    Off,
+    InputCapture,
+    OutputCompare,
+    Pwm
+}
+
 timer!(TIMER0, TIMER0Clk, Timer0, timer0, [
-       (Channel0, cc0pen, cc0_ctrl, cc0_ccvb),
-       (Channel1, cc1pen, cc1_ctrl, cc1_ccvb),
-       (Channel2, cc2pen, cc2_ctrl, cc2_ccvb),
+       (Channel0, cc0_ctrl, cc0_ccvb),
+       (Channel1, cc1_ctrl, cc1_ccvb),
+       (Channel2, cc2_ctrl, cc2_ccvb),
     ]);
 timer!(TIMER1, TIMER1Clk, Timer1, timer1, [
-       (Channel0, cc0pen, cc0_ctrl, cc0_ccvb),
-       (Channel1, cc1pen, cc1_ctrl, cc1_ccvb),
-       (Channel2, cc2pen, cc2_ctrl, cc2_ccvb),
+       (Channel0, cc0_ctrl, cc0_ccvb),
+       (Channel1, cc1_ctrl, cc1_ccvb),
+       (Channel2, cc2_ctrl, cc2_ccvb),
     ]);
 #[cfg(feature = "_has_timer2")]
 timer!(TIMER2, TIMER2Clk, Timer2, timer2, [
-       (Channel0, cc0pen, cc0_ctrl, cc0_ccvb),
-       (Channel1, cc1pen, cc1_ctrl, cc1_ccvb),
-       (Channel2, cc2pen, cc2_ctrl, cc2_ccvb),
+       (Channel0, cc0_ctrl, cc0_ccvb),
+       (Channel1, cc1_ctrl, cc1_ccvb),
+       (Channel2, cc2_ctrl, cc2_ccvb),
     ]);
 #[cfg(feature = "_has_timer3")]
 timer!(TIMER3, TIMER3Clk, Timer3, timer3, [
-       (Channel0, cc0pen, cc0_ctrl, cc0_ccvb),
-       (Channel1, cc1pen, cc1_ctrl, cc1_ccvb),
-       (Channel2, cc2pen, cc2_ctrl, cc2_ccvb),
+       (Channel0, cc0_ctrl, cc0_ccvb),
+       (Channel1, cc1_ctrl, cc1_ccvb),
+       (Channel2, cc2_ctrl, cc2_ccvb),
     ]);

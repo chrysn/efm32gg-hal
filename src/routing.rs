@@ -9,6 +9,8 @@ pub trait HasLocForFunction<P, F> {
     /// Configure and enable the routed pin; what this means in detail depends on the main caller
     /// (eg. TimerChannel::route).
     unsafe fn configure();
+    /// Disable the routed pin
+    unsafe fn deconfigure();
 }
 
 mod per_function;
