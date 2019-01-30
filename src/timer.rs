@@ -93,36 +93,6 @@ impl $TimerN {
         self.register.top.modify(|_, w| unsafe { w.top().bits(top) });
     }
 
-    // The following functions mimic the cortex_m::peripheral::NVIC interrupt controller, as they
-    // behave like a sub-controller for a particular interrupt. FIXME: Generalize this over all
-    // EFM32 devices with their _IEN/_IF/_IFS/_IFC registers
-
-    pub fn interrupt_enable(&mut self, interrupt: InterruptFlag) {
-        self.register.ien.modify(|r, w| unsafe { w.bits(interrupt.bits() | r.bits()) });
-    }
-
-    pub fn interrupt_is_pending(interrupt: InterruptFlag) -> bool {
-        let reg = unsafe { &*registers::$TIMERn::ptr() };
-        reg.if_.read().bits() & interrupt.bits() != 0
-    }
-
-    pub fn interrupt_unpend(interrupt: InterruptFlag) {
-        unsafe {
-            let reg = &*registers::$TIMERn::ptr();
-            reg.ifc.write(|w|  w.bits(interrupt.bits()) );
-        }
-    }
-
-    // FIXME this should definitely be type state
-    pub fn enable_outputcompare(&mut self, channel: i32) {
-        match channel {
-            0 => self.register.cc0_ctrl.modify(|_, w| w.mode().variant(registers::$timerN::cc0_ctrl::MODEW::OUTPUTCOMPARE)),
-            1 => self.register.cc1_ctrl.modify(|_, w| w.mode().variant(registers::$timerN::cc1_ctrl::MODEW::OUTPUTCOMPARE)),
-            2 => self.register.cc2_ctrl.modify(|_, w| w.mode().variant(registers::$timerN::cc2_ctrl::MODEW::OUTPUTCOMPARE)),
-            _ => panic!("Nonexistent channel"),
-        }
-    }
-
     pub fn start(&mut self) {
         self.register.cmd.write(|w| w.start().bit(true));
     }
@@ -165,9 +135,9 @@ pub struct Channels {
 // Needs to be actually repeated over the channels because the channel structs can't, for example,
 // produce a .cc0_ctrl.modify() artifact because there is nothing to be generic over.
 
-timerchannel!($TIMERn, $TimerN, $timerN, Channel0, cc0_ctrl, cc0_ccvb);
-timerchannel!($TIMERn, $TimerN, $timerN, Channel1, cc1_ctrl, cc1_ccvb);
-timerchannel!($TIMERn, $TimerN, $timerN, Channel2, cc2_ctrl, cc2_ccvb);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel0, cc0_ctrl, cc0_ccvb, cc0);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel1, cc1_ctrl, cc1_ccvb, cc1);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel2, cc2_ctrl, cc2_ccvb, cc2);
 
 }
 
@@ -177,7 +147,7 @@ pub use $timerN::$TimerN;
 }
 
 macro_rules! timerchannel {
-    ($TIMERn: ident, $TimerN: ident, $timerN: ident, $ChannelX: ident, $ccX_ctrl: ident, $ccX_ccvb: ident) => {
+    ($TIMERn: ident, $TimerN: ident, $timerN: ident, $ChannelX: ident, $ccX_ctrl: ident, $ccX_ccvb: ident, $ccX: ident) => {
 
 impl TimerChannel<$TimerN, $ChannelX> {
     /// Get a pointer to the underlying timer's peripheral block.
@@ -196,6 +166,29 @@ impl TimerChannel<$TimerN, $ChannelX> {
             ChannelMode::OutputCompare => w.mode().outputcompare(),
             ChannelMode::Pwm => w.mode().pwm(),
         });
+    }
+
+    // The following functions mimic the cortex_m::peripheral::NVIC interrupt controller, as they
+    // behave like a sub-controller for a particular interrupt. FIXME: Generalize this over all
+    // EFM32 devices with their _IEN/_IF/_IFS/_IFC registers
+
+    pub fn interrupt_enable(&mut self) {
+        // FIXME https://github.com/chrysn/efm32gg-hal/issues/1
+        cortex_m::interrupt::free(|_| {
+            unsafe { &mut *Self::register() }.ien.modify(|_, w| w.$ccX().set_bit());
+        });
+    }
+
+    pub fn interrupt_is_pending() -> bool {
+        // Unsafe: OK because atomic read-only operation
+        let reg = unsafe { &*Self::register() };
+        reg.if_.read().$ccX().bit()
+    }
+
+    pub fn interrupt_unpend() {
+        // Unsafe: OK because write-only operation on designated register
+        let reg = unsafe { &*Self::register() };
+        reg.ifc.write(|w| w.$ccX().set_bit());
     }
 }
 
@@ -248,39 +241,6 @@ impl<P> embedded_hal::PwmPin for RoutedTimerChannel<$TimerN, $ChannelX, P> {
     }
 }
 
-/// Timer interrupt flags
-///
-/// Each value represents a particular interrupt flag that is available for enabling, setting and
-/// clearing in all timers.
-///
-/// These are implemented explicitly rather than re-using the register block's individual types, as
-/// not only those are duplicate across the timers (a common occurrence in svd2rust crates), but
-/// even over all interrupt registers of a timer. Implementing them as one bakes in the assumption
-/// that the same flags that can be enabled can also be set or cleared.
-#[derive(Copy, Clone)]
-pub enum InterruptFlag {
-    /// Overflow
-    OF = 1,
-    /// Underflow
-    UF = 2,
-    /// CC Channel 0
-    CC0 = 16,
-    /// CC Channel 1
-    CC1 = 32,
-    /// CC Channel 2
-    CC2 = 64,
-    /// CC Channel 0 Input Capture Buffer Overflow
-    ICBOF0 = 256,
-    /// CC Channel 1 Input Capture Buffer Overflow
-    ICBOF1 = 512,
-    /// CC Channel 2 Input Capture Buffer Overflow
-    ICBOF2 = 1024,
-}
-
-impl InterruptFlag {
-    const fn bits(&self) -> u32 { *self as u32 }
-}
-
 /// Helper for TimerChannel.set_mode
 enum ChannelMode {
     Off,
@@ -290,24 +250,24 @@ enum ChannelMode {
 }
 
 timer!(TIMER0, TIMER0Clk, Timer0, timer0, [
-       (Channel0, cc0_ctrl, cc0_ccvb),
-       (Channel1, cc1_ctrl, cc1_ccvb),
-       (Channel2, cc2_ctrl, cc2_ccvb),
+       (Channel0, cc0_ctrl, cc0_ccvb, cc0),
+       (Channel1, cc1_ctrl, cc1_ccvb, cc1),
+       (Channel2, cc2_ctrl, cc2_ccvb, cc2),
     ]);
 timer!(TIMER1, TIMER1Clk, Timer1, timer1, [
-       (Channel0, cc0_ctrl, cc0_ccvb),
-       (Channel1, cc1_ctrl, cc1_ccvb),
-       (Channel2, cc2_ctrl, cc2_ccvb),
+       (Channel0, cc0_ctrl, cc0_ccvb, cc0),
+       (Channel1, cc1_ctrl, cc1_ccvb, cc1),
+       (Channel2, cc2_ctrl, cc2_ccvb, cc2),
     ]);
 #[cfg(feature = "_has_timer2")]
 timer!(TIMER2, TIMER2Clk, Timer2, timer2, [
-       (Channel0, cc0_ctrl, cc0_ccvb),
-       (Channel1, cc1_ctrl, cc1_ccvb),
-       (Channel2, cc2_ctrl, cc2_ccvb),
+       (Channel0, cc0_ctrl, cc0_ccvb, cc0),
+       (Channel1, cc1_ctrl, cc1_ccvb, cc1),
+       (Channel2, cc2_ctrl, cc2_ccvb, cc2),
     ]);
 #[cfg(feature = "_has_timer3")]
 timer!(TIMER3, TIMER3Clk, Timer3, timer3, [
-       (Channel0, cc0_ctrl, cc0_ccvb),
-       (Channel1, cc1_ctrl, cc1_ccvb),
-       (Channel2, cc2_ctrl, cc2_ccvb),
+       (Channel0, cc0_ctrl, cc0_ccvb, cc0),
+       (Channel1, cc1_ctrl, cc1_ccvb, cc1),
+       (Channel2, cc2_ctrl, cc2_ccvb, cc2),
     ]);
