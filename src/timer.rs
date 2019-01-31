@@ -135,9 +135,9 @@ pub struct Channels {
 // Needs to be actually repeated over the channels because the channel structs can't, for example,
 // produce a .cc0_ctrl.modify() artifact because there is nothing to be generic over.
 
-timerchannel!($TIMERn, $TimerN, $timerN, Channel0, cc0_ctrl, cc0_ccvb, cc0);
-timerchannel!($TIMERn, $TimerN, $timerN, Channel1, cc1_ctrl, cc1_ccvb, cc1);
-timerchannel!($TIMERn, $TimerN, $timerN, Channel2, cc2_ctrl, cc2_ccvb, cc2);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel0, cc0_ctrl, cc0_ccv, cc0_ccvb, cc0);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel1, cc1_ctrl, cc1_ccv, cc1_ccvb, cc1);
+timerchannel!($TIMERn, $TimerN, $timerN, Channel2, cc2_ctrl, cc2_ccv, cc2_ccvb, cc2);
 
 }
 
@@ -147,7 +147,7 @@ pub use $timerN::$TimerN;
 }
 
 macro_rules! timerchannel {
-    ($TIMERn: ident, $TimerN: ident, $timerN: ident, $ChannelX: ident, $ccX_ctrl: ident, $ccX_ccvb: ident, $ccX: ident) => {
+    ($TIMERn: ident, $TimerN: ident, $timerN: ident, $ChannelX: ident, $ccX_ctrl: ident, $ccX_ccv: ident, $ccX_ccvb: ident, $ccX: ident) => {
 
 impl TimerChannel<$TimerN, $ChannelX> {
     /// Get a pointer to the underlying timer's peripheral block.
@@ -167,11 +167,26 @@ impl TimerChannel<$TimerN, $ChannelX> {
             ChannelMode::Pwm => w.mode().pwm(),
         });
     }
+    fn get_mode(&self) -> ChannelMode {
+        use registers::$timerN::$ccX_ctrl::MODER;
+        match unsafe { &*Self::register() }.$ccX_ctrl.read().mode() {
+            MODER::OFF => ChannelMode::Off,
+            MODER::INPUTCAPTURE => ChannelMode::InputCapture,
+            MODER::OUTPUTCOMPARE => ChannelMode::OutputCompare,
+            MODER::PWM => ChannelMode::Pwm,
+        }
+    }
 
     fn set_compare_buffered(&mut self, compare: u16) {
         // Unsafe: OK because it's a CC0 register (see .register())
         // Unsafe around bits: OK because any u16 value is permissible there
         unsafe { &mut *Self::register() }.$ccX_ccvb.modify(|_, w| unsafe { w.ccvb().bits(compare) });
+    }
+
+    fn set_compare_unbuffered(&mut self, compare: u16) {
+        // Unsafe: OK because it's a CC0 register (see .register())
+        // Unsafe around bits: OK because any u16 value is permissible there
+        unsafe { &mut *Self::register() }.$ccX_ccv.modify(|_, w| unsafe { w.ccv().bits(compare) });
     }
 
     fn get_compare_buffered(&self) -> u16 {
@@ -254,7 +269,12 @@ impl<P> embedded_hal::PwmPin for RoutedTimerChannel<$TimerN, $ChannelX, P> {
         unsafe { &*self.register() }.top.read().bits() as Self::Duty
     }
     fn set_duty(&mut self, duty: Self::Duty) {
-        self.channel.set_compare_buffered(duty);
+        // FIXME find a way to set PWM glitch-free in either state without run-time overhead of
+        // type state
+        match self.channel.get_mode() {
+            ChannelMode::Pwm => self.channel.set_compare_buffered(duty),
+            _ => self.channel.set_compare_unbuffered(duty),
+        }
     }
 }
 
@@ -270,24 +290,24 @@ enum ChannelMode {
 }
 
 timer!(TIMER0, TIMER0Clk, Timer0, timer0, [
-       (Channel0, cc0_ctrl, cc0_ccvb, cc0),
-       (Channel1, cc1_ctrl, cc1_ccvb, cc1),
-       (Channel2, cc2_ctrl, cc2_ccvb, cc2),
+       (Channel0, cc0_ctrl, cc0_ccv, cc0_ccvb, cc0),
+       (Channel1, cc1_ctrl, cc1_ccv, cc1_ccvb, cc1),
+       (Channel2, cc2_ctrl, cc2_ccv, cc2_ccvb, cc2),
     ]);
 timer!(TIMER1, TIMER1Clk, Timer1, timer1, [
-       (Channel0, cc0_ctrl, cc0_ccvb, cc0),
-       (Channel1, cc1_ctrl, cc1_ccvb, cc1),
-       (Channel2, cc2_ctrl, cc2_ccvb, cc2),
+       (Channel0, cc0_ctrl, cc0_ccv, cc0_ccvb, cc0),
+       (Channel1, cc1_ctrl, cc1_ccv, cc1_ccvb, cc1),
+       (Channel2, cc2_ctrl, cc2_ccv, cc2_ccvb, cc2),
     ]);
 #[cfg(feature = "_has_timer2")]
 timer!(TIMER2, TIMER2Clk, Timer2, timer2, [
-       (Channel0, cc0_ctrl, cc0_ccvb, cc0),
-       (Channel1, cc1_ctrl, cc1_ccvb, cc1),
-       (Channel2, cc2_ctrl, cc2_ccvb, cc2),
+       (Channel0, cc0_ctrl, cc0_ccv, cc0_ccvb, cc0),
+       (Channel1, cc1_ctrl, cc1_ccv, cc1_ccvb, cc1),
+       (Channel2, cc2_ctrl, cc2_ccv, cc2_ccvb, cc2),
     ]);
 #[cfg(feature = "_has_timer3")]
 timer!(TIMER3, TIMER3Clk, Timer3, timer3, [
-       (Channel0, cc0_ctrl, cc0_ccvb, cc0),
-       (Channel1, cc1_ctrl, cc1_ccvb, cc1),
-       (Channel2, cc2_ctrl, cc2_ccvb, cc2),
+       (Channel0, cc0_ctrl, cc0_ccv, cc0_ccvb, cc0),
+       (Channel1, cc1_ctrl, cc1_ccv, cc1_ccvb, cc1),
+       (Channel2, cc2_ctrl, cc2_ccv, cc2_ccvb, cc2),
     ]);
