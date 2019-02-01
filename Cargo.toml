@@ -33,6 +33,7 @@ efr32xg1 = { version = "0.2.0", optional = true }
 [dependencies.efm32hg]
 git = "https://github.com/em32-rs/efm32hg-pac"
 optional = true
+package = "efm32hg-pac"
 
 [features]
 
