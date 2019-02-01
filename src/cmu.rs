@@ -142,5 +142,9 @@ impl FrozenClock for HFCoreClk {
         {
             Hertz(19_000_000)
         }
+        #[cfg(feature = "chip-efm32hg")]
+        {
+            Hertz(21_000_000)
+        }
     }
 }
