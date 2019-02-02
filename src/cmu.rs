@@ -1,7 +1,7 @@
 //! CMU (Clock Management Unit)
 //!
 //! This first implementation tries to anticipate what can later be done with the clocks, but
-//! only implements what is essential do have working delays.
+//! only implements what is essential to have working delays.
 //!
 //! The workflow is probably going to be:
 //! * Take the SVD-derived peripheral (CMU implementing CMUExt), consume it into a Cmu that we can
@@ -104,7 +104,7 @@ impl GPIOClk {
         // UNSAFE FIXME as with I2CClk
         unsafe {
             let cmu = &*registers::CMU::ptr();
-            #[cfg(feature = "chip-efm32gg")]
+            #[cfg(any(feature = "chip-efm32gg", feature = "chip-efm32hg"))]
             cmu.hfperclken0.modify(|_, w| w.gpio().bit(true));
             #[cfg(feature = "chip-efr32xg1")]
             cmu.hfbusclken0.modify(|_, w| w.gpio().bit(true));
