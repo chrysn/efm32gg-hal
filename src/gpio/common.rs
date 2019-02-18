@@ -20,12 +20,12 @@ pub struct Disabled<TYPE> {
 ///     Output<WiredOr<PullDown>>
 ///     Output<WiredAnd<Normal, Floating>>
 ///     Output<WiredAnd<Normal, PullUp>>
-///     Output<WiredAndFilter<Normal, Floating>>
-///     Output<WiredAndFilter<Normal, PullUp>>
+///     Output<WithFilter<WiredAnd<Normal, Floating>>>
+///     Output<WithFilter<WiredAnd<Normal, PullUp>>>
 ///     Output<WiredAnd<Alternate, Floating>>
 ///     Output<WiredAnd<Alternate, PullUp>>
-///     Output<WiredAndFilter<Alternate, Floating>>
-///     Output<WiredAndFilter<Alternate, PullUp>>
+///     Output<WithFilter<WiredAnd<Alternate, Floating>>>
+///     Output<WithFilter<WiredAnd<Alternate, PullUp>>>
 pub struct Output<TYPE> {
     _private: PhantomData<TYPE>,
 }
@@ -66,7 +66,12 @@ pub struct OpenSource<STATE> {
 
 /// OpenDrain (wired "and") pin is set to be driven low.
 /// Its state can be Floating or PullUp.
-pub struct OpenDrain<STATE> {
+pub struct OpenDrain<MODE, STATE> {
+    _private0: PhantomData<MODE>,
+    _private1: PhantomData<STATE>,
+}
+
+pub struct WithFilter<STATE> {
     _private: PhantomData<STATE>,
 }
 
@@ -76,20 +81,8 @@ type WiredAnd = OpenDrain;
 pub struct Normal;
 pub struct Alternate;
 
-pub enum DriveMode {
-    High,
-
-    Lowest,
-
-    #[cfg(not(feature = "chip-efr32xg1"))]
-    Standard,
-
-    #[cfg(not(feature = "chip-efr32xg1"))]
-    Low,
-}
-
 pub trait GPIOExt {
-    fn split(self, gpioclk: cmu::GPIOClk) -> Pins;
+    fn split(self, gpioclk: cmu::GPIOClk) -> Parts;
 }
 
 /// A trait pertinent to a single GPIO pin; this trait exposes all the functionality that is not

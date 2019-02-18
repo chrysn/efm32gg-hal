@@ -10,6 +10,8 @@ use crate::cmu;
 use core::marker::PhantomData;
 use registers;
 
+pub use registers::gpio::pa_ctrl::DRIVEMODEW as DriveMode;
+
 pub mod common;
 pub use common::*;
 
@@ -128,7 +130,15 @@ gpio!([
 /// Defines GPIO pins available for efm32hg chip family.
 /// Only list the minimal pins available for QFN24 packaged chips for now.
 #[cfg(feature = "chip-efm32hg")]
-gpio!([
+gpio!(
+    [
+        (pa_alt_drive, pa_ctrl),
+        (pb_alt_drive, pb_ctrl),
+        (pc_alt_drive, pb_ctrl),
+        (pe_alt_drive, pb_ctrl),
+        (pf_alt_drive, pf_ctrl),
+    ],
+    [
     PA0:  (pa0,   0, pa_din, pa_dout,  mode0, pa_model, pa_doutclr, pa_doutset),
     PB7:  (pb7,   7, pb_din, pb_dout,  mode7, pb_model, pb_doutclr, pb_doutset),
     PB8:  (pb8,   8, pb_din, pb_dout,  mode8, pb_modeh, pb_doutclr, pb_doutset),
