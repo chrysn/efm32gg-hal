@@ -134,8 +134,8 @@ gpio!(
     [
         (pa_alt_drive, pa_ctrl),
         (pb_alt_drive, pb_ctrl),
-        (pc_alt_drive, pb_ctrl),
-        (pe_alt_drive, pb_ctrl),
+        (pc_alt_drive, pc_ctrl),
+        (pe_alt_drive, pe_ctrl),
         (pf_alt_drive, pf_ctrl),
     ],
     [
