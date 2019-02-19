@@ -455,10 +455,12 @@ macro_rules! gpio {
 
 macro_rules! impl_from {
     ($pX:ident, [$(($pTy:ty, $setter:ident),)+]) => {
-        impl<MODE> From<$pX<MODE>> for $pX<$pTy> {
-            fn from(p: $pX<MODE>) -> $pX<$pTy> {
-                p.$setter()
+        $(
+            impl<MODE> From<$pX<MODE>> for $pX<$pTy> {
+                fn from(p: $pX<MODE>) -> $pX<$pTy> {
+                    p.$setter()
+                }
             }
-        }
+        )+
     }
 }
