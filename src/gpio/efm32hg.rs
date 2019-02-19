@@ -285,7 +285,7 @@ macro_rules! gpio {
                     (Input<PullDown>,             into_input_pulled_down),
                     (Input<PullUp>,               into_input_pulled_down),
                     (Input<WithFilter<PullDown>>, into_input_pulled_down_with_filter),
-                    (Input<WithFilter<PullUp>,    into_input_pulled_up_with_filter>),
+                    (Input<WithFilter<PullUp>>,   into_input_pulled_up_with_filter),
 
                     (Output<Pushpull<Normal>>,    into_pushpull),
                     (Output<Pushpull<Alternate>>, into_pushpull_alt_drive),
@@ -395,7 +395,7 @@ macro_rules! gpio {
         impl Ports {
             /// when Ports splitted, give Pins back.
             /// Ports then will be consumed implicitly.
-            pub fn split(self) Pins {
+            pub fn split(self) -> Pins {
                 Pins {
                     $(
                         $pxi: pins::$PXi { _mode: PhantomData },
@@ -404,7 +404,7 @@ macro_rules! gpio {
             }
 
             $(
-                pub fn $pX_drive(mut self, mode: DriveMode) Self {
+                pub fn $pX_drive(mut self, mode: DriveMode) -> Self {
                     let gpio = sneak_into_gpio();
                     unsafe { gpio.$pX_ctrl.write(|w| w.drivermode().variant(mode)) }
                     self
