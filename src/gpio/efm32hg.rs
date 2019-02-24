@@ -246,7 +246,51 @@ macro_rules! gpio {
 
                         $PXi { _mode: PhantomData }
                     }
+                }
 
+                gpio_impl_from_trait! {
+                    pin:  $PXi,
+                    from: Disabled<Floating>,
+                    into: [
+                        (Disabled<PullUp>, into_disabled_pulled_up),
+
+                        (Input<Floating>,             into_input),
+                        (Input<WithFilter<Floating>>, into_input_with_filter),
+                        (Input<PullDown>,             into_input_pulled_down),
+                        (Input<PullUp>,               into_input_pulled_up),
+                        (Input<WithFilter<PullDown>>, into_input_pulled_down_with_filter),
+                        (Input<WithFilter<PullUp>>,   into_input_pulled_up_with_filter),
+
+                        (Output<PushPull<Normal>>,    into_pushpull),
+                        (Output<PushPull<Alternate>>, into_pushpull_alt_drive),
+
+                        (Output<OpenSource<Floating>>, into_wiredor),
+                        (Output<OpenSource<PullDown>>, into_wiredor_pulled_down),
+
+                        (Output<OpenDrain<Normal, Floating>>,                into_wiredand),
+                        (Output<OpenDrain<Normal, PullUp>>,                  into_wiredand_pulled_up),
+                        (Output<WithFilter<OpenDrain<Normal, Floating>>>,    into_wiredand_with_filter),
+                        (Output<WithFilter<OpenDrain<Normal, PullUp>>>,      into_wiredand_with_filter_pulled_up),
+                        (Output<OpenDrain<Alternate, Floating>>,             into_wiredand_alt_drive),
+                        (Output<OpenDrain<Alternate, PullUp>>,               into_wiredand_alt_drive_pulled_up),
+                        (Output<WithFilter<OpenDrain<Alternate, Floating>>>, into_wiredand_alt_drive_with_filter),
+                        (Output<WithFilter<OpenDrain<Alternate, PullUp>>>,   into_wiredand_alt_drive_with_filter_pulled_up),
+
+                        (Input<Output<PushPull<Normal>>>,    into_io_pushpull),
+                        (Input<Output<PushPull<Alternate>>>, into_io_pushpull_alt_drive),
+
+                        (Input<Output<OpenSource<Floating>>>, into_io_wiredor),
+                        (Input<Output<OpenSource<PullDown>>>, into_io_wiredor_pulled_down),
+
+                        (Input<Output<OpenDrain<Normal, Floating>>>,                into_io_wiredand),
+                        (Input<Output<OpenDrain<Normal, PullUp>>>,                  into_io_wiredand_pulled_up),
+                        (Input<Output<WithFilter<OpenDrain<Normal, Floating>>>>,    into_io_wiredand_with_filter),
+                        (Input<Output<WithFilter<OpenDrain<Normal, PullUp>>>>,      into_io_wiredand_with_filter_pulled_up),
+                        (Input<Output<OpenDrain<Alternate, Floating>>>,             into_io_wiredand_alt_drive),
+                        (Input<Output<OpenDrain<Alternate, PullUp>>>,               into_io_wiredand_alt_drive_pulled_up),
+                        (Input<Output<WithFilter<OpenDrain<Alternate, Floating>>>>, into_io_wiredand_alt_drive_with_filter),
+                        (Input<Output<WithFilter<OpenDrain<Alternate, PullUp>>>>,   into_io_wiredand_alt_drive_with_filter_pulled_up),
+                    ],
                 }
 
                 impl<P> digital::OutputPin for $PXi<Output<P>> {
@@ -385,5 +429,17 @@ macro_rules! gpio {
                 }
             }
         }
+    }
+}
+
+macro_rules! gpio_impl_from_trait {
+    (pin: $pX:ident, from: $from:ty, into: [$(($targetTy:ty, $fn:ident),)+],) => {
+        $(
+            impl From<$pX<$from>> for $pX<$targetTy> {
+                fn from(p: $pX<$from>) -> $pX<$targetTy> {
+                    p.$fn()
+                }
+            }
+        )+
     }
 }
