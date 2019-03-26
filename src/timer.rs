@@ -96,21 +96,21 @@ impl embedded_hal::Pwm for $TimerN {
     fn enable(&mut self, channel: Self::Channel) {
         match channel {
             0 => {
-                #[cfg(feature = "chip-efm32gg")]
+                #[cfg(any(feature = "chip-efm32gg", feature = "chip-efm32hg"))]
                 self.register.route.modify(|_, w| w.cc0pen().set_bit());
                 #[cfg(feature = "chip-efr32xg1")]
                 self.register.routepen.modify(|_, w| w.cc0pen().set_bit());
                 self.register.cc0_ctrl.modify(|_, w| w.mode().variant(registers::$timerN::cc0_ctrl::MODEW::PWM));
             },
             1 => {
-                #[cfg(feature = "chip-efm32gg")]
+                #[cfg(any(feature = "chip-efm32gg", feature = "chip-efm32hg"))]
                 self.register.route.modify(|_, w| w.cc1pen().set_bit());
                 #[cfg(feature = "chip-efr32xg1")]
                 self.register.routepen.modify(|_, w| w.cc1pen().set_bit());
                 self.register.cc1_ctrl.modify(|_, w| w.mode().variant(registers::$timerN::cc1_ctrl::MODEW::PWM));
             },
             2 => {
-                #[cfg(feature = "chip-efm32gg")]
+                #[cfg(any(feature = "chip-efm32gg", feature = "chip-efm32hg"))]
                 self.register.route.modify(|_, w| w.cc2pen().set_bit());
                 #[cfg(feature = "chip-efr32xg1")]
                 self.register.routepen.modify(|_, w| w.cc2pen().set_bit());
@@ -120,7 +120,7 @@ impl embedded_hal::Pwm for $TimerN {
         }
     }
 
-    #[cfg(feature = "chip-efm32gg")]
+    #[cfg(any(feature = "chip-efm32gg", feature = "chip-efm32hg"))]
     fn disable(&mut self, channel: Self::Channel) {
         match channel {
             0 => self.register.route.modify(|_, w| w.cc0pen().clear_bit()),

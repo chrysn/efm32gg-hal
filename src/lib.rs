@@ -5,8 +5,12 @@ extern crate embedded_hal;
 
 #[cfg(feature = "chip-efm32gg")]
 extern crate efm32gg990 as registers;
+
 #[cfg(feature = "chip-efr32xg1")]
 extern crate efr32xg1 as registers;
+
+#[cfg(feature = "chip-efm32hg")]
+extern crate efm32hg as registers;
 
 pub mod time_util;
 
