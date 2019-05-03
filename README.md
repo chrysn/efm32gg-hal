@@ -1,6 +1,9 @@
 `efm32gg-hal`
 -------------
 
+> **Note**: Renaming of this crate to `em32-hal` is pending, along with the
+> move of the crate into the [em32-wg] group.
+
 This is an implementation of the [embedded-hal] API for various Silicon Labs
 devices in the lineage around the [EFM32 Giant Gecko].
 
@@ -13,14 +16,11 @@ bit-band access becomes mandatory for atomic operations on a register). On the
 long run, it can be expected to cover the devices supported by the vendor's
 [emlib] C library.
 
-The name "efm32gg-hal" stuck from the first supported device, and will stay
-until the author finds a term that can serve as a stable identifier for "EFM32,
-EFR32 and any other chips that have compatible peripherals".
-
 The actually used chip is selected by features named like "chip-efm32gg" or
 "chip-efr32x1"; pick an extern crate to load as "registers" and add the
 appropriate dependency to a crate typically created by [svd2rust].
 
+[em32-wg]: https://github.com/em32-rs/wg
 [embedded-hal]: https://github.com/japaric/embedded-hal
 [EFM32 Giant Gecko]: https://www.silabs.com/products/mcu/32-bit/efm32-giant-gecko
 [svd2rust]: https://github.com/japaric/svd2rust
@@ -35,9 +35,11 @@ of the HAL's ``digital`` interface.
 
 ### Usage
 
-Please see the [EFM32GG-STK3700] board crate for examples.
+The board support crates for [EFM32GG-STK3700] and [Thunderboard (SLTB001a)]
+contain examples of how this crate can be used.
 
 [EFM32GG-STK3700]: https://github.com/chrysn/efm32gg-stk3700
+[Thunderboard (SLTB001a)]: https://github.com/chrysn/thunderboard-sltb001a
 
 ### License
 
