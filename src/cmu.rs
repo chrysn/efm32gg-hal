@@ -72,10 +72,8 @@ impl I2C0Clk {
     }
 }
 
-
 macro_rules! timerclk {
     ($TIMERnClk: ident, $timerN: ident) => {
-
         pub struct $TIMERnClk {
             _private: (),
         }
@@ -89,7 +87,7 @@ macro_rules! timerclk {
                 }
             }
         }
-    }
+    };
 }
 
 timerclk!(TIMER0Clk, timer0);

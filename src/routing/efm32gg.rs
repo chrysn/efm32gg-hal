@@ -3,8 +3,8 @@
 //! members, so if anything is missing here that's present on another GG, it should be possible to
 //! just add it.)
 
-use crate::timer::{Timer0, Timer1, Timer2, Timer3, Channel0, Channel1, Channel2};
 use super::per_peripheral::timerperipheral_pin;
+use crate::timer::{Channel0, Channel1, Channel2, Timer0, Timer1, Timer2, Timer3};
 
 // Routes with pins on duplicate routes still need some macro adjustment
 
