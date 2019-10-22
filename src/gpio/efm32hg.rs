@@ -381,7 +381,7 @@ macro_rules! gpio {
             $(
                 pub fn $pX_drive(mut self, mode: DriveMode) -> Self {
                     let gpio = sneak_into_gpio();
-                    gpio.$pX_ctrl.write(|w| w.drivemode().bits(mode._bits()));
+                    gpio.$pX_ctrl.write(|w| w.drivemode().bits(mode.into()));
                     self
                 }
             )+
