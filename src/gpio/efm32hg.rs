@@ -294,7 +294,7 @@ macro_rules! gpio {
                 }
 
                 impl<P> digital::OutputPin for $PXi<Output<P>> {
-                    type Error = &'static str;
+                    type Error = ();
 
                     fn set_low(self: &mut Self) -> Result<(), Self::Error> {
                         let gpio = sneak_into_gpio();
@@ -323,7 +323,7 @@ macro_rules! gpio {
 
                 #[cfg(feature = "unproven")]
                 impl<P> digital::InputPin for $PXi<Input<P>> {
-                    type Error = &'static str;
+                    type Error = ();
 
                     fn is_low(self: &Self) -> Result<bool, Self::Error> {
                         let gpio = sneak_into_gpio();
@@ -336,7 +336,7 @@ macro_rules! gpio {
                 }
 
                 impl<P> digital::OutputPin for $PXi<Input<Output<P>>> {
-                    type Error = &'static str;
+                    type Error = ();
 
                     fn set_low(self: &mut Self) -> Result<(), Self::Error> {
                         let gpio = sneak_into_gpio();
