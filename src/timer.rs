@@ -144,7 +144,7 @@ impl embedded_hal::Pwm for $TimerN {
         unimplemented!();
     }
 
-    fn set_period<P>(&mut self, time: P) {
+    fn set_period<P>(&mut self, _time: P) {
         unimplemented!();
     }
 

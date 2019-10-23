@@ -4,7 +4,7 @@ macro_rules! gpio {
      [$($PXi:ident: ($pxi:ident, $i:expr, $px_din:ident, $px_dout:ident, $modei:ident, $px_modehl:ident, $outclr:ident, $outset:ident),)+]) => {
 
         pub mod pins {
-            use embedded_hal::digital;
+            use embedded_hal::digital::v2 as digital;
             use core::marker::PhantomData;
             use super::*;
 
@@ -294,62 +294,72 @@ macro_rules! gpio {
                 }
 
                 impl<P> digital::OutputPin for $PXi<Output<P>> {
-                    fn set_low(self: &mut Self) {
+                    type Error = &'static str;
+
+                    fn set_low(self: &mut Self) -> Result<(), Self::Error> {
                         let gpio = sneak_into_gpio();
                         unsafe { gpio.$outclr.write(|w| w.bits(1 << $i)); }
+                        Ok(())
                     }
 
-                    fn set_high(self: &mut Self) {
+                    fn set_high(self: &mut Self) -> Result<(), Self::Error> {
                         let gpio = sneak_into_gpio();
                         unsafe { gpio.$outset.write(|w| w.bits(1 << $i)); }
+                        Ok(())
                     }
                 }
 
                 #[cfg(feature = "unproven")]
                 impl<P> digital::StatefulOutputPin for $PXi<Output<P>> {
-                    fn is_set_low(self: &Self) -> bool {
+                    fn is_set_low(self: &Self) -> Result<bool, Self::Error> {
                         let gpio = sneak_into_gpio();
-                        gpio.$px_dout.read().bits() & (1 << $i) == 0
+                        Ok(gpio.$px_dout.read().bits() & (1 << $i) == 0)
                     }
 
-                    fn is_set_high(self: &Self) -> bool {
-                        !self.is_set_low()
+                    fn is_set_high(self: &Self) -> Result<bool, Self::Error> {
+                        self.is_set_low().map(|state| !state )
                     }
                 }
 
                 #[cfg(feature = "unproven")]
                 impl<P> digital::InputPin for $PXi<Input<P>> {
-                    fn is_low(self: &Self) -> bool {
+                    type Error = &'static str;
+
+                    fn is_low(self: &Self) -> Result<bool, Self::Error> {
                         let gpio = sneak_into_gpio();
-                        gpio.$px_din.read().bits() & (1 << $i) == 0
+                        Ok(gpio.$px_din.read().bits() & (1 << $i) == 0)
                     }
 
-                    fn is_high(self: &Self) -> bool {
-                        !self.is_low()
+                    fn is_high(self: &Self) -> Result<bool, Self::Error> {
+                        self.is_low().map(|state| !state )
                     }
                 }
 
                 impl<P> digital::OutputPin for $PXi<Input<Output<P>>> {
-                    fn set_low(self: &mut Self) {
+                    type Error = &'static str;
+
+                    fn set_low(self: &mut Self) -> Result<(), Self::Error> {
                         let gpio = sneak_into_gpio();
                         unsafe { gpio.$outclr.write(|w| w.bits(1 << $i)); }
+                        Ok(())
                     }
 
-                    fn set_high(self: &mut Self) {
+                    fn set_high(self: &mut Self) -> Result<(), Self::Error> {
                         let gpio = sneak_into_gpio();
                         unsafe { gpio.$outset.write(|w| w.bits(1 << $i)); }
+                        Ok(())
                     }
                 }
 
                 #[cfg(feature = "unproven")]
                 impl<P> digital::StatefulOutputPin for $PXi<Input<Output<P>>> {
-                    fn is_set_low(self: &Self) -> bool {
+                    fn is_set_low(self: &Self) -> Result<bool, Self::Error> {
                         let gpio = sneak_into_gpio();
-                        gpio.$px_dout.read().bits() & (1 << $i) == 0
+                        Ok(gpio.$px_dout.read().bits() & (1 << $i) == 0)
                     }
 
-                    fn is_set_high(self: &Self) -> bool {
-                        !self.is_set_low()
+                    fn is_set_high(self: &Self) -> Result<bool, Self::Error> {
+                        self.is_set_low().map(|state| !state )
                     }
                 }
 
@@ -379,7 +389,7 @@ macro_rules! gpio {
             }
 
             $(
-                pub fn $pX_drive(mut self, mode: DriveMode) -> Self {
+                pub fn $pX_drive(self, mode: DriveMode) -> Self {
                     let gpio = sneak_into_gpio();
                     gpio.$pX_ctrl.write(|w| w.drivemode().bits(mode.into()));
                     self
