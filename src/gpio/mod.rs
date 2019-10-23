@@ -10,6 +10,7 @@ use crate::cmu;
 use core::marker::PhantomData;
 use registers;
 
+#[cfg(feature = "chip-efm32hg")]
 pub use registers::gpio::pa_ctrl::DRIVEMODE_A as DriveMode;
 
 pub mod common;

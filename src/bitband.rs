@@ -8,18 +8,18 @@
 //! (The original code is licensed under the same terms and available on
 //! <https://github.com/thejpster/tm4c123x-hal>)
 
-use core::ptr::write_volatile;
-
 /// Sets/Clears a bit at the given address atomically, using the bit-banding
 /// feature. We take a const pointer and mutate it, but that's because the
 /// svd2rust crate will only give us const pointers.
+#[cfg(not(feature = "chip-efm32hg"))]
 pub unsafe fn change_bit<T>(address: *const T, bit: u8, value: bool) {
     let address = address as u32;
     let bit_word = ref_to_bitband(address, bit);
-    write_volatile(bit_word, if value { 0x01 } else { 0x00 });
+    core::ptr::write_volatile(bit_word, if value { 0x01 } else { 0x00 });
 }
 
 /// Address must be >= 0x2000_0000 and <= 0x2007_FFFC. Bit must be < 32.
+#[cfg(not(feature = "chip-efm32hg"))]
 fn ref_to_bitband(address: u32, bit: u8) -> *mut u32 {
     let prefix = address & 0xF000_0000;
     let byte_offset = address & 0x0FFF_FFFF;

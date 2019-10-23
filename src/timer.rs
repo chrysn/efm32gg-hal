@@ -2,6 +2,7 @@
 //!
 //! This module exposes some features of the EFM32 timer/counter peripheral; most notably, it
 //! allows easy configuration of PWM pins.
+#![allow(dead_code)]
 
 use core::marker::PhantomData;
 
