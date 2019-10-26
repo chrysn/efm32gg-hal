@@ -17,9 +17,8 @@ repository = "https://github.com/chrysn/efm32gg-hal"
 [dependencies]
 cortex-m = "0.5.2"
 
-# version is a wild guess. dependency on unproven features should only be
-# present if own unproven feature is active (but how do i do that?).
-embedded-hal = { version = "0.2.0", features = ["unproven"] }
+# version is a wild guess.
+embedded-hal = "0.2.0"
 
 # for efm32gg, it's probably convenient to depend on the biggest available
 # svd2rust-generated crate (the chips will let us; FWICT all EFM32GG are the
@@ -32,8 +31,8 @@ efr32xg1 = { version = "0.2.0", optional = true }
 
 [features]
 
-default = ["unproven"]
-unproven = []
+default = [ "unproven" ]
+unproven = [ "embedded-hal/unproven" ]
 
 # Used by the newer generation of chips where peripherals have their individual
 # functions routable, not only peripherals as a whole.
