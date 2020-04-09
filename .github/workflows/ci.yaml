@@ -1,0 +1,52 @@
+name: CI
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt
+          override: true
+      - uses: mbrobbel/rustfmt-check@master
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: ${{matrix.target}}
+          override: true
+      - run: |
+          cargo check \
+            --verbose \
+            --no-default-features \
+            --features="${{matrix.chip}} ${{matrix.proven}}" \
+            --target="${{matrix.target}}"
+    strategy:
+      fail-fast: false
+      matrix:
+        chip:
+          - chip-efm32gg
+          - chip-efr32xg1
+        proven:
+          - unproven
+        toolchain:
+          - stable
+          - nightly
+        target:
+          - thumbv7m-none-eabi
+        exclude:
+          - toolchain: stable
+            proven: unproven

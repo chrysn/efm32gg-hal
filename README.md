@@ -1,3 +1,5 @@
+![CI Status](https://github.com/chrysn/efm32gg-hal/workflows/CI/badge.svg)
+
 `efm32gg-hal`
 -------------
 
