@@ -52,6 +52,12 @@ pub struct Clocks {
     pub timer2: TIMER2Clk,
     #[cfg(feature = "_has_timer3")]
     pub timer3: TIMER3Clk,
+    #[cfg(feature = "_has_timer4")]
+    pub timer4: TIMER4Clk,
+    #[cfg(feature = "_has_timer5")]
+    pub timer5: TIMER5Clk,
+    #[cfg(feature = "_has_timer6")]
+    pub timer6: TIMER6Clk,
 }
 
 pub struct I2C0Clk {
@@ -72,10 +78,8 @@ impl I2C0Clk {
     }
 }
 
-
 macro_rules! timerclk {
     ($TIMERnClk: ident, $timerN: ident) => {
-
         pub struct $TIMERnClk {
             _private: (),
         }
@@ -89,7 +93,7 @@ macro_rules! timerclk {
                 }
             }
         }
-    }
+    };
 }
 
 timerclk!(TIMER0Clk, timer0);
@@ -98,6 +102,12 @@ timerclk!(TIMER1Clk, timer1);
 timerclk!(TIMER2Clk, timer2);
 #[cfg(feature = "_has_timer3")]
 timerclk!(TIMER3Clk, timer3);
+#[cfg(feature = "_has_timer4")]
+timerclk!(TIMER4Clk, timer4);
+#[cfg(feature = "_has_timer5")]
+timerclk!(TIMER5Clk, timer5);
+#[cfg(feature = "_has_timer6")]
+timerclk!(TIMER6Clk, timer6);
 
 pub struct GPIOClk {
     _private: (),
@@ -110,7 +120,7 @@ impl GPIOClk {
             let cmu = &*registers::CMU::ptr();
             #[cfg(feature = "chip-efm32gg")]
             cmu.hfperclken0.modify(|_, w| w.gpio().bit(true));
-            #[cfg(feature = "chip-efr32xg1")]
+            #[cfg(any(feature = "chip-efr32xg1", feature = "chip-efm32gg11b820"))]
             cmu.hfbusclken0.modify(|_, w| w.gpio().bit(true));
         }
     }
@@ -128,6 +138,12 @@ impl Cmu {
             timer2: TIMER2Clk { _private: () },
             #[cfg(feature = "_has_timer3")]
             timer3: TIMER3Clk { _private: () },
+            #[cfg(feature = "_has_timer4")]
+            timer4: TIMER4Clk { _private: () },
+            #[cfg(feature = "_has_timer5")]
+            timer5: TIMER5Clk { _private: () },
+            #[cfg(feature = "_has_timer6")]
+            timer6: TIMER6Clk { _private: () },
         }
     }
 }
@@ -144,7 +160,7 @@ impl FrozenClock for HFCoreClk {
         {
             Hertz(14_000_000)
         }
-        #[cfg(feature = "chip-efr32xg1")]
+        #[cfg(any(feature = "chip-efr32xg1", feature = "chip-efm32gg11b820"))]
         {
             Hertz(19_000_000)
         }

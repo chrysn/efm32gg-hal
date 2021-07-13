@@ -2,8 +2,8 @@
 //! sheet](https://www.silabs.com/documents/public/data-sheets/efr32mg1-datasheet.pdf); Flex- and
 //! Blue Gecko appear to be the same.
 
-use crate::timer::{Timer0, Channel0, Channel1, Channel2};
 use super::per_function::timerchannel_pin;
+use crate::timer::{Channel0, Channel1, Channel2, Timer0};
 
 timerchannel_pin!(Timer0, Channel0, PA0, loc0, cc0loc, cc0pen);
 
