@@ -16,7 +16,7 @@ repository = "https://github.com/chrysn/efm32gg-hal"
 
 [dependencies]
 cortex-m = "0.7.0"
-embedded-hal = { version = "0.2.3", features = ["unproven"] }
+embedded-hal = { version = "0.2.2", features = ["unproven"] }
 
 # for efm32gg, it's probably convenient to depend on the biggest available
 # svd2rust-generated crate (the chips will let us; FWICT all EFM32GG are the
