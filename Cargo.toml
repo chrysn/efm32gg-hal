@@ -15,11 +15,8 @@ repository = "https://github.com/chrysn/efm32gg-hal"
 # documentation = "https://docs.rs/efm32gg-hal" # only to be advertised when actually useful
 
 [dependencies]
-cortex-m = "0.5.2"
-
-# version is a wild guess. dependency on unproven features should only be
-# present if own unproven feature is active (but how do i do that?).
-embedded-hal = { version = "0.2.0", features = ["unproven"] }
+cortex-m = "0.7.0"
+embedded-hal = { version = "0.2.2", features = ["unproven"] }
 
 # for efm32gg, it's probably convenient to depend on the biggest available
 # svd2rust-generated crate (the chips will let us; FWICT all EFM32GG are the
@@ -28,6 +25,7 @@ embedded-hal = { version = "0.2.0", features = ["unproven"] }
 # even smoother.
 
 efm32gg990 = { version = "0.1.2", optional = true }
+efm32gg11b820 = { version = "0.9.0", optional = true }
 efr32xg1 = { version = "0.2.0", optional = true }
 
 [features]
@@ -40,6 +38,7 @@ unproven = []
 _routing_per_function = []
 
 chip-efm32gg = [ "efm32gg990", "_has_timer2", "_has_timer3" ]
+chip-efm32gg11b820 = [ "efm32gg11b820", "_has_timer2", "_has_timer3", "_has_timer4", "_has_timer5", "_has_timer6", "_routing_per_function", "_has_channel3" ]
 chip-efr32xg1 = [ "efr32xg1", "_routing_per_function" ]
 
 # Marker features pulled in by the individual chip features. Enabling them
@@ -47,3 +46,7 @@ chip-efr32xg1 = [ "efr32xg1", "_routing_per_function" ]
 # that are not available).
 _has_timer2 = []
 _has_timer3 = []
+_has_timer4 = []
+_has_timer5 = []
+_has_timer6 = []
+_has_channel3 = []

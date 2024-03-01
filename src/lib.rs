@@ -3,6 +3,8 @@
 extern crate cortex_m;
 extern crate embedded_hal;
 
+#[cfg(feature = "chip-efm32gg11b820")]
+extern crate efm32gg11b820 as registers;
 #[cfg(feature = "chip-efm32gg")]
 extern crate efm32gg990 as registers;
 #[cfg(feature = "chip-efr32xg1")]
